@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InspectorCam — Documentare fotografică ITP</title>
+<meta name="description" content="Fotografiază vehiculele la ITP în mod profesionist. Organizare automată, acces instant de pe telefon, dashboard live.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0B0E15;
+  --bg2:      #111520;
+  --surface:  #161b27;
+  --border:   #1e2535;
+  --accent:   #FF5F1F;
+  --accent2:  #FF8C55;
+  --text:     #EDF2F7;
+  --muted:    #64748b;
+  --muted2:   #94a3b8;
+  --success:  #00D97E;
+  --radius:   14px;
+  --glow:     0 0 60px rgba(255,95,31,0.25);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Manrope', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ── Typography ── */
+h1, h2, h3, .display {
+  font-family: 'Syne', sans-serif;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+/* ── Noise texture overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ── Nav ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 18px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(11,14,21,0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: all 0.3s;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+}
+.nav-logo-icon {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.nav-logo-text {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  list-style: none;
+}
+.nav-links a {
+  color: var(--muted2);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--text); }
+
+.nav-cta {
+  background: var(--accent);
+  color: #fff !important;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 700 !important;
+  font-size: 0.88rem !important;
+  transition: opacity 0.2s !important;
+}
+.nav-cta:hover { opacity: 0.85; color: #fff !important; }
+
+/* ── Hero ── */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 40px 80px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.hero-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px;
+  height: 600px;
+  background: radial-gradient(ellipse, rgba(255,95,31,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at center, black 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,95,31,0.1);
+  border: 1px solid rgba(255,95,31,0.25);
+  border-radius: 50px;
+  padding: 6px 16px 6px 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent2);
+  margin-bottom: 28px;
+  animation: fadeInDown 0.6s ease both;
+}
+.hero-badge-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 8px var(--accent); }
+  50% { box-shadow: 0 0 16px var(--accent); }
+}
+
+.hero-title {
+  font-size: clamp(2.8rem, 6vw, 5.5rem);
+  font-weight: 800;
+  margin-bottom: 24px;
+  animation: fadeInUp 0.7s ease 0.1s both;
+}
+
+.hero-title .line2 {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  color: var(--muted2);
+  max-width: 560px;
+  margin: 0 auto 40px;
+  line-height: 1.7;
+  animation: fadeInUp 0.7s ease 0.2s both;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  animation: fadeInUp 0.7s ease 0.3s both;
+  margin-bottom: 64px;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--accent);
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+  box-shadow: 0 4px 24px rgba(255,95,31,0.35);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(255,95,31,0.45);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: transform 0.2s, background 0.2s;
+}
+.btn-secondary:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.1);
+}
+
+.btn-icon { font-size: 1.1rem; }
+
+/* ── Phone mockup ── */
+.hero-visual {
+  position: relative;
+  display: inline-block;
+  animation: fadeInUp 0.8s ease 0.4s both;
+}
+
+.phone-frame {
+  width: 240px;
+  height: 420px;
+  background: #0d1018;
+  border-radius: 36px;
+  border: 2px solid rgba(255,255,255,0.1);
+  box-shadow:
+    0 40px 80px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(255,255,255,0.04),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  overflow: hidden;
+  position: relative;
+  margin: 0 auto;
+}
+
+.phone-screen {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(160deg, #111520 0%, #0B0E15 100%);
+  padding: 24px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phone-status {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #444;
+  margin-bottom: 8px;
+}
+
+.phone-plate {
+  background: rgba(255,95,31,0.12);
+  border: 1px solid rgba(255,95,31,0.3);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.phone-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.phone-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 10px;
+  color: #aaa;
+  transition: all 0.5s;
+}
+
+.phone-step.done {
+  background: rgba(0,217,126,0.06);
+  border-color: rgba(0,217,126,0.2);
+  color: var(--success);
+}
+
+.phone-step.active {
+  background: rgba(255,95,31,0.08);
+  border-color: rgba(255,95,31,0.3);
+  color: var(--accent2);
+}
+
+.step-icon { font-size: 12px; }
+
+.phone-cam {
+  width: 100%;
+  height: 100px;
+  background: #060809;
+  border-radius: 10px;
+  border: 1px solid rgba(255,95,31,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cam-corner {
+  position: absolute;
+  width: 16px; height: 16px;
+  border-color: var(--accent);
+  border-style: solid;
+  border-width: 0;
+}
+.cam-corner.tl { top: 8px; left: 8px; border-top-width: 2px; border-left-width: 2px; }
+.cam-corner.tr { top: 8px; right: 8px; border-top-width: 2px; border-right-width: 2px; }
+.cam-corner.bl { bottom: 8px; left: 8px; border-bottom-width: 2px; border-left-width: 2px; }
+.cam-corner.br { bottom: 8px; right: 8px; border-bottom-width: 2px; border-right-width: 2px; }
+
+/* Floating cards around phone */
+.float-card {
+  position: absolute;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.float-card-1 {
+  top: 40px; left: -140px;
+  animation: floatA 4s ease-in-out infinite;
+}
+.float-card-2 {
+  bottom: 80px; left: -120px;
+  animation: floatB 4.5s ease-in-out infinite;
+}
+.float-card-3 {
+  top: 60px; right: -130px;
+  animation: floatC 5s ease-in-out infinite;
+}
+.float-card-4 {
+  bottom: 60px; right: -150px;
+  animation: floatA 3.8s ease-in-out infinite 0.5s;
+}
+
+@keyframes floatA {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes floatB {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(6px); }
+}
+@keyframes floatC {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.float-label { color: var(--muted); font-size: 0.68rem; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+.float-val { font-weight: 700; color: var(--text); }
+.float-val.green { color: var(--success); }
+.float-val.orange { color: var(--accent); }
+
+/* ── Section ── */
+section {
+  position: relative;
+  z-index: 1;
+  padding: 100px 40px;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+.section-label::before {
+  content: '';
+  display: inline-block;
+  width: 20px; height: 2px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.section-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  margin-bottom: 16px;
+  max-width: 700px;
+}
+
+.section-sub {
+  font-size: 1.05rem;
+  color: var(--muted2);
+  max-width: 560px;
+  line-height: 1.7;
+  margin-bottom: 60px;
+}
+
+/* ── Problem/Solution ── */
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 0;
+}
+
+.compare-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.compare-card.bad::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: #e53e3e;
+}
+
+.compare-card.good::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+
+.compare-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.compare-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+
+.compare-icon.bad  { background: rgba(229,62,62,0.12); }
+.compare-icon.good { background: rgba(255,95,31,0.12); }
+
+.compare-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+}
+
+.compare-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--muted2);
+  line-height: 1.5;
+}
+
+.compare-item::before {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 14px;
+}
+
+.compare-card.bad  .compare-item::before { content: '✗'; color: #e53e3e; }
+.compare-card.good .compare-item::before { content: '✓'; color: var(--success); }
+.compare-card.good .compare-item { color: var(--text); }
+
+/* ── Features ── */
+#features { background: var(--bg2); }
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.feature-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 0;
+  background: linear-gradient(0deg, rgba(255,95,31,0.04) 0%, transparent 100%);
+  transition: height 0.3s;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255,95,31,0.25);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+}
+.feature-card:hover::after { height: 100%; }
+
+.feature-icon {
+  width: 48px; height: 48px;
+  background: rgba(255,95,31,0.1);
+  border: 1px solid rgba(255,95,31,0.2);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.feature-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.feature-desc {
+  font-size: 0.88rem;
+  color: var(--muted2);
+  line-height: 1.6;
+}
+
+/* ── Steps ── */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  position: relative;
+}
+
+.steps::before {
+  content: '';
+  position: absolute;
+  top: 36px;
+  left: calc(100% / 6);
+  right: calc(100% / 6);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+
+.step {
+  text-align: center;
+  padding: 0 24px;
+}
+
+.step-num {
+  width: 72px; height: 72px;
+  background: var(--bg2);
+  border: 1px solid rgba(255,95,31,0.3);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin: 0 auto 24px;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 0 4px var(--bg), 0 0 24px rgba(255,95,31,0.2);
+}
+
+.step-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.step-desc {
+  font-size: 0.88rem;
+  color: var(--muted2);
+  line-height: 1.6;
+}
+
+/* ── Pricing ── */
+#pricing { background: var(--bg2); }
+
+.pricing-card {
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid rgba(255,95,31,0.25);
+  border-radius: 20px;
+  padding: 48px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 80px rgba(255,95,31,0.08);
+}
+
+.pricing-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+
+.pricing-badge {
+  display: inline-block;
+  background: rgba(255,95,31,0.12);
+  border: 1px solid rgba(255,95,31,0.25);
+  color: var(--accent2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 14px;
+  border-radius: 50px;
+  margin-bottom: 20px;
+}
+
+.pricing-price {
+  font-family: 'Syne', sans-serif;
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.pricing-price span {
+  font-size: 1.5rem;
+  color: var(--muted2);
+  font-weight: 500;
+}
+
+.pricing-period {
+  color: var(--muted2);
+  font-size: 0.9rem;
+  margin-bottom: 36px;
+}
+
+.pricing-features {
+  list-style: none;
+  text-align: left;
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pricing-features li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.95rem;
+}
+
+.pricing-features li::before {
+  content: '✓';
+  color: var(--success);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pricing-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 20px;
+  line-height: 1.6;
+}
+
+/* ── Download ── */
+#download {
+  text-align: center;
+  background:
+    radial-gradient(ellipse 80% 60% at center, rgba(255,95,31,0.06) 0%, transparent 70%),
+    var(--bg);
+}
+
+.download-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 600px;
+  margin: 0 auto 24px;
+}
+
+.download-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  text-decoration: none;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+
+.download-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255,95,31,0.3);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+}
+
+.download-os-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.download-os {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.download-desc {
+  font-size: 0.8rem;
+  color: var(--muted2);
+}
+
+.download-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: 'Manrope', sans-serif;
+  cursor: pointer;
+  width: 100%;
+  transition: opacity 0.2s;
+}
+.download-btn:hover { opacity: 0.85; }
+
+.download-note {
+  font-size: 0.82rem;
+  color: var(--muted);
+  max-width: 400px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ── Footer ── */
+footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 40px;
+  text-align: center;
+}
+
+.footer-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.footer-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.footer-contact {
+  font-size: 0.85rem;
+  color: var(--muted2);
+}
+.footer-contact a {
+  color: var(--accent2);
+  text-decoration: none;
+}
+.footer-contact a:hover { text-decoration: underline; }
+
+.footer-copy {
+  margin-top: 24px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* ── Animations ── */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .compare { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
+  .steps::before { display: none; }
+  .step { padding: 20px 0; border-bottom: 1px solid var(--border); }
+  .step:last-child { border-bottom: none; }
+  .float-card { display: none; }
+  .hero-visual { margin-top: 0; }
+}
+
+@media (max-width: 600px) {
+  nav { padding: 16px 20px; }
+  nav .nav-links { display: none; }
+  section { padding: 70px 20px; }
+  .hero { padding: 100px 20px 60px; }
+  .features-grid { grid-template-columns: 1fr; }
+  .download-grid { grid-template-columns: 1fr; max-width: 280px; }
+  .pricing-card { padding: 32px 24px; }
+  .hero-actions { flex-direction: column; align-items: center; }
+  .btn-primary, .btn-secondary { width: 100%; justify-content: center; max-width: 300px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="nav-logo-icon">📷</div>
+    <span class="nav-logo-text">InspectorCam</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Funcționalități</a></li>
+    <li><a href="#how">Cum funcționează</a></li>
+    <li><a href="#pricing">Prețuri</a></li>
+    <li><a href="#download" class="nav-cta">Descarcă</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+
+  <div class="container" style="position:relative;z-index:1">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Nou — versiunea 1.0 disponibilă
+    </div>
+
+    <h1 class="hero-title">
+      Documentare ITP<br>
+      <span class="line2">profesionistă, în secunde.</span>
+    </h1>
+
+    <p class="hero-sub">
+      Fotografiezi vehiculul de pe telefon, dosarul se creează automat pe calculator. Organizat după dată, număr de înmatriculare, gata de livrat.
+    </p>
+
+    <div class="hero-actions">
+      <a href="#download" class="btn-primary">
+        <span class="btn-icon">⬇</span>
+        Descarcă gratuit
+      </a>
+      <a href="#how" class="btn-secondary">
+        <span class="btn-icon">▶</span>
+        Cum funcționează
+      </a>
+    </div>
+
+    <!-- Phone mockup -->
+    <div class="hero-visual">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="phone-status">
+            <span>9:41</span>
+            <span>InspectorCam</span>
+          </div>
+          <div class="phone-plate" id="demo-plate">B-298-FOV</div>
+          <div class="phone-steps" id="demo-steps">
+            <div class="phone-step done"><span class="step-icon">✓</span>Față vehicul</div>
+            <div class="phone-step done"><span class="step-icon">✓</span>Spate vehicul</div>
+            <div class="phone-step active"><span class="step-icon">📷</span>Lateral stânga</div>
+            <div class="phone-step"><span class="step-icon">○</span>Lateral dreapta</div>
+            <div class="phone-step"><span class="step-icon">○</span>Bord / VIN</div>
+          </div>
+          <div class="phone-cam">
+            <div class="cam-corner tl"></div>
+            <div class="cam-corner tr"></div>
+            <div class="cam-corner bl"></div>
+            <div class="cam-corner br"></div>
+            🚗
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating info cards -->
+      <div class="float-card float-card-1">
+        <div class="float-label">Dosar creat</div>
+        <div class="float-val green">✓ Automat</div>
+      </div>
+      <div class="float-card float-card-2">
+        <div class="float-label">Inspector</div>
+        <div class="float-val">Ion Popescu</div>
+      </div>
+      <div class="float-card float-card-3">
+        <div class="float-label">Inspecții azi</div>
+        <div class="float-val orange">24</div>
+      </div>
+      <div class="float-card float-card-4">
+        <div class="float-label">Fotografii</div>
+        <div class="float-val">6 / 6</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Problem/Solution -->
+<section id="compare" style="background:var(--bg2)">
+  <div class="container">
+    <div class="section-label">Înainte vs. după</div>
+    <h2 class="section-title reveal">Documentezi acum cu un sistem improvizat?</h2>
+    <p class="section-sub reveal reveal-delay-1">Majoritatea stațiilor ITP pierd timp prețios cu fotografii dezorganizate, foldere manuale și fișiere imposibil de găsit ulterior.</p>
+
+    <div class="compare">
+      <div class="compare-card bad reveal">
+        <div class="compare-head">
+          <div class="compare-icon bad">✗</div>
+          Fără InspectorCam
+        </div>
+        <ul class="compare-items">
+          <li>Fotografii împrăștiate în Galerie, fără ordine</li>
+          <li>Foldere create manual, inconsistent</li>
+          <li>Nu știi câte inspecții ai făcut azi</li>
+          <li>Imposibil de găsit dosarul unui vehicul</li>
+          <li>Telefoane multiple, fișiere pierdute</li>
+          <li>Timp pierdut la finalul zilei</li>
+        </ul>
+      </div>
+
+      <div class="compare-card good reveal reveal-delay-1">
+        <div class="compare-head">
+          <div class="compare-icon good">✓</div>
+          Cu InspectorCam
+        </div>
+        <ul class="compare-items">
+          <li>Dosarul se creează automat la fiecare vehicul</li>
+          <li>Organizat după an / lună / zi / număr înmatriculare</li>
+          <li>Dashboard cu toate inspecțiile zilei, în timp real</li>
+          <li>Căutare instantă după număr de înmatriculare</li>
+          <li>Orice telefon, acces instant prin WiFi</li>
+          <li>Zero configurare — instalezi și pornești</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features">
+  <div class="container">
+    <div class="section-label">Funcționalități</div>
+    <h2 class="section-title reveal">Tot ce ai nevoie, nimic în plus.</h2>
+    <p class="section-sub reveal reveal-delay-1">Construit specific pentru stații ITP din România. Simplu, rapid, fără cloud, fără abonamente la servicii externe.</p>
+
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon">📱</div>
+        <div class="feature-title">Fotografiere de pe orice telefon</div>
+        <div class="feature-desc">Orice telefon conectat la WiFi-ul stației devine cameră profesionistă. Scanezi un QR și ești gata.</div>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">📁</div>
+        <div class="feature-title">Organizare automată</div>
+        <div class="feature-desc">Fiecare vehicul primește propriul dosar: <code style="color:var(--accent);font-size:0.8em">2026 / Iunie / 5 / BV-33-ABG</code>. Niciodată mai cauți manual.</div>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">🔢</div>
+        <div class="feature-title">Etape fotografiere ghidate</div>
+        <div class="feature-desc">Inspectorul urmează pași predefinit — față, spate, laterale, bord, VIN — cu ghidaj vizual clar.</div>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Dashboard live</div>
+        <div class="feature-desc">Toate inspecțiile zilei, cu inspector, oră și număr de fotografii. Actualizare automată din 10 în 10 secunde.</div>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon">👥</div>
+        <div class="feature-title">Mai mulți inspectori</div>
+        <div class="feature-desc">Fiecare inspector se loghează cu numele lui. Fiecare inspecție este asociată corect, automat.</div>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Date locale, 100%</div>
+        <div class="feature-desc">Nimic nu ajunge în cloud. Toate fotografiile rămân pe calculatorul stației. Sigur și conform GDPR.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section id="how" style="background:var(--bg2)">
+  <div class="container">
+    <div class="section-label">Cum funcționează</div>
+    <h2 class="section-title reveal">3 pași. Atât.</h2>
+    <p class="section-sub reveal reveal-delay-1">De la instalare la prima inspecție documentată în mai puțin de 5 minute.</p>
+
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">1</div>
+        <div class="step-title">Instalezi pe calculator</div>
+        <div class="step-desc">Descarci aplicația, o instalezi în 2 minute. Pornește automat la fiecare repornire a calculatorului.</div>
+      </div>
+      <div class="step reveal reveal-delay-1">
+        <div class="step-num">2</div>
+        <div class="step-title">Scanezi QR-ul de pe telefon</div>
+        <div class="step-desc">Aplicația afișează un cod QR. Îl scanezi cu orice telefon și ești conectat instant, fără parole sau setări.</div>
+      </div>
+      <div class="step reveal reveal-delay-2">
+        <div class="step-num">3</div>
+        <div class="step-title">Fotografiezi și gata</div>
+        <div class="step-desc">Introduci numărul de înmatriculare, urmezi pașii ghidați, apeși fotografii. Dosarul apare automat pe calculator.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section id="pricing">
+  <div class="container" style="text-align:center">
+    <div class="section-label" style="justify-content:center">Prețuri</div>
+    <h2 class="section-title reveal" style="margin:0 auto 16px">Un singur abonament.<br>Totul inclus.</h2>
+    <p class="section-sub reveal reveal-delay-1" style="margin:0 auto 50px">Fără costuri ascunse, fără limitări de fotografii, fără abonament la cloud.</p>
+
+    <div class="pricing-card reveal">
+      <div class="pricing-badge">Abonament anual</div>
+      <div class="pricing-price">Contact <span style="font-size:1rem">pentru preț</span></div>
+      <div class="pricing-period">per stație ITP / 12 luni</div>
+
+      <ul class="pricing-features">
+        <li>Fotografii nelimitate</li>
+        <li>Inspectori nelimitați</li>
+        <li>Actualizări incluse pe toată durata abonamentului</li>
+        <li>Funcționează offline, date locale 100%</li>
+        <li>Suport tehnic prin email</li>
+        <li>Instalare ghidată de la distanță</li>
+      </ul>
+
+      <a href="mailto:gabrielbalcan@yahoo.com?subject=Solicit%20InspectorCam&body=Buna%20ziua%2C%20sunt%20interesat%20de%20InspectorCam%20pentru%20statia%20mea%20ITP." class="btn-primary" style="display:flex;justify-content:center">
+        Solicită ofertă
+      </a>
+
+      <p class="pricing-note">Trimite-ne un email și te contactăm în maxim 24h cu toate detaliile și o perioadă de probă gratuită.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Download -->
+<section id="download">
+  <div class="container">
+    <div class="section-label" style="justify-content:center">Descarcă</div>
+    <h2 class="section-title reveal" style="text-align:center;margin:0 auto 16px">Începe acum. E gratuit.</h2>
+    <p class="section-sub reveal reveal-delay-1" style="text-align:center;margin:0 auto 48px">Descarcă, instalează, activează licența. În 5 minute documentezi prima inspecție.</p>
+
+    <div class="download-grid reveal">
+      <a class="download-card" href="https://github.com/Gabrielfof/inspectorcam-app/releases/latest/download/InspectorCam-1.0.0-arm64.dmg">
+        <div class="download-os-icon"></div>
+        <div class="download-os">macOS</div>
+        <div class="download-desc">macOS 12+ · Apple Silicon & Intel</div>
+        <div class="download-btn">Descarcă .dmg</div>
+      </a>
+      <a class="download-card" href="https://github.com/Gabrielfof/inspectorcam-app/releases/latest/download/InspectorCam-Setup-1.0.0.exe">
+        <div class="download-os-icon">🪟</div>
+        <div class="download-os">Windows</div>
+        <div class="download-desc">Windows 10 / 11 · 64-bit</div>
+        <div class="download-btn">Descarcă .exe</div>
+      </a>
+    </div>
+
+    <p class="download-note reveal reveal-delay-1">
+      Ai nevoie de o cheie de licență pentru a activa aplicația.<br>
+      <a href="mailto:gabrielbalcan@yahoo.com?subject=Solicit%20licenta%20InspectorCam" style="color:var(--accent2);text-decoration:none">Contactează-ne</a> pentru a obține cheia ta.
+    </p>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">InspectorCam</div>
+  <div class="footer-sub">Documentare fotografică profesionistă pentru stații ITP din România</div>
+  <div class="footer-contact">
+    Contact: <a href="mailto:gabrielbalcan@yahoo.com">gabrielbalcan@yahoo.com</a>
+  </div>
+  <div class="footer-copy">© 2026 InspectorCam. Toate drepturile rezervate.</div>
+</footer>
+
+<script>
+// Scroll reveal
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Phone demo animation
+const plates = ['B-298-FOV', 'BV-33-ABG', 'CJ-12-XYZ', 'IS-44-ABC', 'TM-99-DEF'];
+let plateIdx = 0;
+
+function nextPlate() {
+  plateIdx = (plateIdx + 1) % plates.length;
+  const el = document.getElementById('demo-plate');
+  if (el) {
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.textContent = plates[plateIdx];
+      el.style.opacity = '1';
+    }, 300);
+  }
+
+  // Reset steps animation
+  const steps = document.querySelectorAll('#demo-steps .phone-step');
+  let i = 0;
+  steps.forEach(s => { s.className = 'phone-step'; });
+
+  function tickStep() {
+    if (i < steps.length) {
+      if (i > 0) steps[i-1].className = 'phone-step done';
+      steps[i].className = 'phone-step active';
+      i++;
+      setTimeout(tickStep, 900);
+    } else {
+      steps[steps.length-1].className = 'phone-step done';
+    }
+  }
+  setTimeout(tickStep, 500);
+}
+
+// Transition style for plate
+const plateEl = document.getElementById('demo-plate');
+if (plateEl) plateEl.style.transition = 'opacity 0.3s';
+
+setInterval(nextPlate, 5000);
+
+// Nav scroll effect
+window.addEventListener('scroll', () => {
+  const nav = document.querySelector('nav');
+  if (window.scrollY > 20) {
+    nav.style.boxShadow = '0 4px 32px rgba(0,0,0,0.4)';
+  } else {
+    nav.style.boxShadow = 'none';
+  }
+});
+</script>
+
+</body>
+</html>
