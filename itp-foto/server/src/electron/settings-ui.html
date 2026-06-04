@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>InspectorCam — Setări</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #111; --surface: #1a1a1a; --border: #2a2a2a;
+    --accent: #FF5F1F; --success: #00D97E; --danger: #E63; --text: #F0F0F0; --muted: #666;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+  .header-icon { font-size: 22px; }
+  .header-title { font-size: 16px; font-weight: 700; }
+
+  .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .tab-btn {
+    padding: 12px 20px; background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: color 0.15s;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  .tab-pane { display: none; padding: 24px; }
+  .tab-pane.active { display: block; }
+
+  .form-group { margin-bottom: 18px; }
+  label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  input[type=text], input[type=password], input[type=number] {
+    width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); padding: 10px 14px; font-size: 14px;
+  }
+  input:focus { outline: none; border-color: var(--accent); }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { font-size: 14px; }
+  .toggle-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+
+  .btn-primary {
+    background: var(--accent); border: none; border-radius: 8px; color: #fff; padding: 11px 24px;
+    font-size: 14px; font-weight: 700; cursor: pointer; width: 100%;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:disabled { opacity: 0.4; cursor: default; }
+
+  /* Inspectors */
+  .inspector-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .inspector-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+  }
+  .inspector-name { flex: 1; font-weight: 600; }
+  .inspector-pin  { font-size: 12px; color: var(--muted); }
+  .btn-del {
+    background: rgba(220,50,50,0.12); border: 1px solid rgba(220,50,50,0.3);
+    border-radius: 6px; color: var(--danger); font-size: 12px; padding: 5px 10px; cursor: pointer;
+  }
+  .btn-del:hover { background: rgba(220,50,50,0.22); }
+
+  .add-inspector-form {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px;
+  }
+  .add-inspector-form .row { display: flex; gap: 10px; align-items: flex-end; }
+  .add-inspector-form .row .form-group { margin-bottom: 0; flex: 1; }
+  .btn-add {
+    background: var(--accent); border: none; border-radius: 8px; color: #fff;
+    padding: 10px 18px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .btn-add:hover { opacity: 0.88; }
+
+  .btn-browse {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); padding: 10px 14px; font-size: 13px; cursor: pointer; white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .btn-browse:hover { border-color: var(--accent); color: var(--accent); }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #222; border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 20px; font-size: 13px; opacity: 0; transition: opacity 0.2s;
+    pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+  .toast.ok   { border-color: var(--success); color: var(--success); }
+  .toast.err  { border-color: var(--danger);  color: var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">Setări InspectorCam</div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="tab-station" onclick="showTab('tab-station', this)">Stație</button>
+  <button class="tab-btn" data-tab="tab-inspectors" onclick="showTab('tab-inspectors', this)">Inspectori</button>
+  <button class="tab-btn" data-tab="tab-steps" onclick="showTab('tab-steps', this)">Etape fotografiere</button>
+</div>
+
+<!-- ── Tab: Stație ── -->
+<div class="tab-pane active" id="tab-station">
+  <div class="form-group">
+    <label>Denumire stație ITP</label>
+    <input type="text" id="station-name" placeholder="Ex: ITP Auto Brașov">
+  </div>
+  <div class="form-group">
+    <label>Cod RAR / număr autorizație</label>
+    <input type="text" id="cod-rar" placeholder="Ex: BV-ITP-001">
+  </div>
+  <div class="form-group">
+    <label>Adresă stație</label>
+    <input type="text" id="station-address" placeholder="Ex: Str. Exemplu nr. 10, Brașov">
+  </div>
+  <div class="form-group">
+    <label>Folder salvare fotografii</label>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="text" id="save-folder" placeholder="Ex: C:\InspectorCam sau /Users/utilizator/InspectorCam" style="flex:1">
+      <button class="btn-browse" onclick="browseFolder()" title="Alege folder">Alege…</button>
+    </div>
+  </div>
+  <button class="btn-primary" id="save-station-btn" onclick="saveStation()">Salvează setările stației</button>
+</div>
+
+<!-- ── Tab: Inspectori ── -->
+<div class="tab-pane" id="tab-inspectors">
+  <div class="inspector-list" id="inspector-list">
+    <p style="color:var(--muted)">Se încarcă…</p>
+  </div>
+
+  <div class="add-inspector-form">
+    <div style="font-size:13px;font-weight:700;margin-bottom:12px">Adaugă inspector nou</div>
+    <div class="row">
+      <div class="form-group">
+        <label>Nume complet</label>
+        <input type="text" id="new-name" placeholder="Ion Popescu">
+      </div>
+      <div class="form-group" style="max-width:130px">
+        <label>PIN (opțional)</label>
+        <input type="password" id="new-pin" maxlength="4" placeholder="4 cifre" inputmode="numeric">
+      </div>
+      <button class="btn-add" onclick="addInspector()">+ Adaugă</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Tab: Etape ── -->
+<div class="tab-pane" id="tab-steps">
+  <div style="margin-bottom:16px;color:var(--muted);font-size:13px">
+    Adăugați, modificați sau ștergeți etapele de fotografiere. Ordinea din listă este ordinea afișată pe telefon.
+  </div>
+
+  <div id="steps-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+
+  <div class="add-inspector-form" style="margin-bottom:16px">
+    <div style="font-size:13px;font-weight:700;margin-bottom:12px">Adaugă etapă nouă</div>
+    <div class="row">
+      <div class="form-group" style="margin-bottom:0;flex:1">
+        <label>Denumire etapă</label>
+        <input type="text" id="new-step-label" placeholder="Ex: Parbriz față" onkeydown="if(event.key==='Enter') addStep()">
+      </div>
+      <button class="btn-add" onclick="addStep()">+ Adaugă</button>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="saveSteps()">Salvează etapele</button>
+  <p style="margin-top:10px;font-size:11px;color:var(--muted)">Dacă lista e goală, se folosesc etapele implicite (față, stand frânare, motor, odometru, interior, ecuson).</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE = 'http://localhost:3000';
+
+// ── Tabs ──
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  (btn || document.querySelector(`[data-tab="${id}"]`)).classList.add('active');
+}
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ── Load config ──
+async function loadConfig() {
+  try {
+    const res = await fetch(BASE + '/api/config');
+    const { config } = await res.json();
+    if (!config) return;
+    document.getElementById('station-name').value    = config.station_name     || '';
+    document.getElementById('cod-rar').value         = config.station_rar_code || '';
+    document.getElementById('station-address').value = config.station_address  || '';
+    document.getElementById('save-folder').value     = config.save_folder      || '';
+    if (config.custom_steps) {
+      try { stepsData = JSON.parse(config.custom_steps); } catch { stepsData = []; }
+    }
+    renderSteps();
+  } catch (e) {
+    showToast('Nu s-a putut conecta la server.', 'err');
+  }
+}
+
+async function saveStation() {
+  const btn = document.getElementById('save-station-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(BASE + '/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ config: {
+        station_name:     document.getElementById('station-name').value.trim(),
+        station_rar_code: document.getElementById('cod-rar').value.trim(),
+        station_address:  document.getElementById('station-address').value.trim(),
+        save_folder:      document.getElementById('save-folder').value.trim(),
+      }}),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.eroare || 'Eroare');
+    showToast('Setări salvate.', 'ok');
+  } catch (e) { showToast(e.message || 'Eroare la salvare.', 'err'); }
+  btn.disabled = false;
+}
+
+// ── Steps CRUD ──
+let stepsData = [];
+
+function renderSteps() {
+  const el = document.getElementById('steps-list');
+  if (!stepsData.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:8px 0">Nicio etapă configurată. Se folosesc etapele implicite.</p>';
+    return;
+  }
+  el.innerHTML = stepsData.map((step, i) => `
+    <div class="inspector-item">
+      <span style="color:var(--muted);font-family:monospace;font-size:12px;min-width:20px">${i + 1}.</span>
+      <span class="inspector-name">${esc(step.label)}</span>
+      <button class="btn-del" onclick="deleteStep(${i})">Șterge</button>
+    </div>`).join('');
+}
+
+function addStep() {
+  const input = document.getElementById('new-step-label');
+  const label = input.value.trim();
+  if (!label) { showToast('Introduceți denumirea etapei.', 'err'); return; }
+  stepsData.push({ id: 'step-' + Date.now(), label, hint: '' });
+  input.value = '';
+  renderSteps();
+}
+
+function deleteStep(index) {
+  stepsData.splice(index, 1);
+  renderSteps();
+}
+
+async function saveSteps() {
+  try {
+    const res = await fetch(BASE + '/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ config: {
+        custom_steps: JSON.stringify(stepsData),
+      }}),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.eroare || 'Eroare');
+    showToast('Etape salvate.', 'ok');
+  } catch (e) { showToast(e.message || 'Eroare la salvare.', 'err'); }
+}
+
+// ── Inspectors ──
+async function loadInspectors() {
+  try {
+    const res  = await fetch(BASE + '/api/inspectors');
+    const data = await res.json();
+    renderInspectors(data.inspectors || []);
+  } catch {
+    document.getElementById('inspector-list').innerHTML = '<p style="color:var(--muted)">Eroare la încărcare.</p>';
+  }
+}
+
+function renderInspectors(list) {
+  const el = document.getElementById('inspector-list');
+  if (list.length === 0) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:13px">Niciun inspector adăugat încă.</p>';
+    return;
+  }
+  el.innerHTML = list.map(i => `
+    <div class="inspector-item">
+      <span class="inspector-name">${esc(i.name)}</span>
+      <span class="inspector-pin">${i.pin ? 'PIN setat' : 'fără PIN'}</span>
+      <button class="btn-del" onclick="deleteInspector('${i.id}')">Șterge</button>
+    </div>`).join('');
+}
+
+async function addInspector() {
+  const name = document.getElementById('new-name').value.trim();
+  const pin  = document.getElementById('new-pin').value.trim();
+  if (!name) { showToast('Introduceți numele inspectorului.', 'err'); return; }
+  try {
+    const res = await fetch(BASE + '/api/inspectors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, pin: pin || null }),
+    });
+    if (!res.ok) throw new Error();
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-pin').value  = '';
+    showToast(`${name} adăugat.`, 'ok');
+    loadInspectors();
+  } catch { showToast('Eroare la adăugare.', 'err'); }
+}
+
+async function deleteInspector(id) {
+  if (!confirm('Ștergeți acest inspector?')) return;
+  try {
+    await fetch(BASE + '/api/inspectors/' + id, { method: 'DELETE' });
+    showToast('Inspector șters.', 'ok');
+    loadInspectors();
+  } catch { showToast('Eroare la ștergere.', 'err'); }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function browseFolder() {
+  try {
+    const { ipcRenderer } = require('electron');
+    const folder = await ipcRenderer.invoke('choose-folder');
+    if (folder) {
+      document.getElementById('save-folder').value = folder;
+    }
+  } catch (e) {
+    showToast('Nu s-a putut deschide selectorul de folder.', 'err');
+  }
+}
+
+// Init
+window.addEventListener('DOMContentLoaded', () => {
+  loadConfig();
+  loadInspectors();
+  const hash = window.location.hash.slice(1);
+  if (hash && document.getElementById(hash)) showTab(hash);
+});
+try {
+  const { ipcRenderer } = require('electron');
+  ipcRenderer.on('switch-tab', (e, tab) => {
+    if (document.getElementById(tab)) showTab(tab);
+  });
+} catch (_) {}
+</script>
+</body>
+</html>

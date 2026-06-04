@@ -1,0 +1,48 @@
+appId: ro.inspectorcam.app
+productName: InspectorCam
+copyright: InspectorCam © 2026
+
+publish:
+  provider: github
+  owner: Gabrielfof
+  repo: inspectorcam-app
+  releaseType: release
+
+directories:
+  output: ../../dist
+  buildResources: build-resources
+
+files:
+  - src/**/*
+  - "!src/**/*.test.js"
+  - node_modules/**/*
+  - "!node_modules/electron/**"
+  - "!node_modules/electron-builder/**"
+  - "!node_modules/@electron/**"
+  - "!node_modules/nodemon/**"
+
+extraResources:
+  - from: "../pwa"
+    to: "pwa"
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: "build-resources/icon.icns"
+  # Adaugă excepție în Windows Firewall automat
+  requestedExecutionLevel: requireAdministrator
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
+  installerLanguages: [en_US]
+  include: build-resources/installer.nsh
+
+mac:
+  target: dmg
+  icon: "build-resources/icon.icns"
+  category: public.app-category.business

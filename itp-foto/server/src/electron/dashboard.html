@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InspectorCam — Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #111;
+    --surface:  #1a1a1a;
+    --border:   #2a2a2a;
+    --accent:   #FF5F1F;
+    --success:  #00D97E;
+    --warn:     #FFBE0B;
+    --text:     #F0F0F0;
+    --muted:    #666;
+    --radius:   10px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    font-size: 14px;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+    gap: 24px;
+    overflow-y: auto;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-icon { width: 36px; height: 36px; border-radius: 9px; overflow: hidden; flex-shrink: 0; }
+  .logo-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .logo-text { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .logo-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .status-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .status-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+
+  .server-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+  .dot.offline { background: #e33; }
+
+  .server-url {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+    word-break: break-all;
+  }
+
+  /* QR */
+  .qr-wrap {
+    background: #fff;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .qr-wrap canvas { display: block; }
+  .qr-label { font-size: 11px; color: #333; text-align: center; }
+
+  /* Stats */
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-val { font-weight: 700; color: var(--accent); font-size: 18px; }
+
+  /* Sidebar actions */
+  .sidebar-actions { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+  .btn-sidebar {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    text-align: left;
+    transition: background 0.15s;
+  }
+  .btn-sidebar:hover { background: var(--border); }
+  .btn-sidebar.danger { border-color: #e33; color: #e33; }
+  .btn-sidebar.danger:hover { background: rgba(220,50,50,0.1); }
+
+  /* ── Main ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .topbar-title { font-size: 16px; font-weight: 700; }
+  .topbar-right { display: flex; gap: 10px; align-items: center; }
+
+  .filter-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 7px 12px;
+    font-size: 13px;
+    width: 180px;
+  }
+  .filter-input:focus { outline: none; border-color: var(--accent); }
+
+  .date-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 7px 10px;
+    font-size: 13px;
+    color-scheme: dark;
+  }
+  .date-input:focus { outline: none; border-color: var(--accent); }
+
+  .refresh-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .refresh-btn:hover { opacity: 0.85; }
+
+  .table-wrap { flex: 1; overflow-y: auto; padding: 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead th {
+    background: var(--surface);
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: var(--surface); }
+  td { padding: 12px 16px; font-size: 13px; }
+
+  .plate-cell { font-family: monospace; font-weight: 700; font-size: 14px; letter-spacing: 1px; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-ok     { background: rgba(0,217,126,0.15); color: var(--success); }
+  .badge-warn   { background: rgba(255,190,11,0.15);  color: var(--warn); }
+
+  /* ── Notification banners ── */
+  .notif-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border-bottom: 1px solid;
+  }
+  .notif-bar.show { display: flex; }
+  .notif-bar.warn  { background: rgba(255,190,11,0.1); border-color: rgba(255,190,11,0.3); color: var(--warn); }
+  .notif-bar.update { background: rgba(0,217,126,0.08); border-color: rgba(0,217,126,0.25); color: var(--success); }
+  .notif-bar .notif-msg { flex: 1; }
+  .notif-bar .notif-btn {
+    background: currentColor; color: #111; border: none; border-radius: 6px;
+    padding: 5px 12px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .notif-bar .notif-dismiss {
+    background: none; border: none; color: currentColor; cursor: pointer;
+    font-size: 16px; opacity: 0.6; padding: 0 4px; line-height: 1;
+  }
+  .notif-bar .notif-dismiss:hover { opacity: 1; }
+
+  .empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--muted);
+  }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* footer */
+  .footer {
+    padding: 10px 24px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+  #last-refresh { }
+</style>
+</head>
+<body>
+
+<!-- ── Notification banners ── -->
+<div id="bar-expiry" class="notif-bar warn">
+  <span class="notif-msg" id="bar-expiry-msg"></span>
+  <button class="notif-dismiss" onclick="this.closest('.notif-bar').classList.remove('show')">✕</button>
+</div>
+<div id="bar-update-available" class="notif-bar update">
+  <span class="notif-msg" id="bar-update-msg">Actualizare disponibilă. Se descarcă…</span>
+  <button class="notif-dismiss" onclick="this.closest('.notif-bar').classList.remove('show')">✕</button>
+</div>
+<div id="bar-update-ready" class="notif-bar update" style="display:none">
+  <span class="notif-msg" id="bar-ready-msg">Actualizare descărcată. Se instalează la închidere.</span>
+  <button class="notif-btn" onclick="installUpdate()">Instalează acum</button>
+  <button class="notif-dismiss" onclick="this.closest('.notif-bar').classList.remove('show')">✕</button>
+</div>
+
+<div style="display:flex;flex-direction:column;height:100vh;overflow:hidden">
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="logo">
+    <span class="logo-icon"><img src="http://localhost:3000/icons/icon-192.png" alt=""></span>
+    <div>
+      <div class="logo-text">InspectorCam</div>
+      <div class="logo-sub" id="station-name">Se încarcă…</div>
+    </div>
+  </div>
+
+  <div class="status-card">
+    <div class="status-label">Server</div>
+    <div class="server-status">
+      <div class="dot" id="server-dot"></div>
+      <span id="server-status-text">Online</span>
+    </div>
+    <div class="server-url" id="server-url">—</div>
+  </div>
+
+  <div>
+    <div class="status-label" style="margin-bottom:10px">Scanați pentru a accesa PWA</div>
+    <div class="qr-wrap">
+      <canvas id="qr-canvas"></canvas>
+      <div class="qr-label" id="qr-url">—</div>
+    </div>
+  </div>
+
+  <div class="status-card">
+    <div class="status-label">Azi</div>
+    <div class="stat-row">
+      <span>Inspecții totale</span>
+      <span class="stat-val" id="stat-total">—</span>
+    </div>
+    <div class="stat-row">
+      <span>Inspectori activi</span>
+      <span class="stat-val" id="stat-inspectors">—</span>
+    </div>
+  </div>
+
+  <div class="sidebar-actions">
+    <button class="btn-sidebar" onclick="openInspectors()">Gestionare inspectori</button>
+    <button class="btn-sidebar" onclick="openSettings()">Setări stație</button>
+    <button class="btn-sidebar" onclick="openFolder()">Deschide folder</button>
+    <button class="btn-sidebar danger" onclick="quitApp()">Închide aplicația</button>
+  </div>
+</aside>
+
+<!-- ── Main wrapper (flex row for sidebar + main) ── -->
+<div style="display:flex;flex:1;overflow:hidden">
+
+<!-- ── Main ── -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">Inspecții</div>
+    <div class="topbar-right">
+      <input type="date" class="date-input" id="filter-date">
+      <input type="text" class="filter-input" id="filter-plate" placeholder="Filtrează număr…">
+      <button class="refresh-btn" onclick="loadInspections()">Reîmprospătare</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Oră</th>
+          <th>Număr înmatriculare</th>
+          <th>Inspector</th>
+          <th>Fotografii</th>
+          <th>Status</th>
+          <th>Folder</th>
+        </tr>
+      </thead>
+      <tbody id="inspections-tbody">
+        <tr><td colspan="6"><div class="empty-state"><div class="empty-icon"></div><p>Se încarcă…</p></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <span>InspectorCam v<span id="app-version">1.0.0</span></span>
+    <span id="last-refresh"></span>
+  </div>
+</main>
+
+</div><!-- end flex row -->
+</div><!-- end outer column -->
+
+<script>
+const { ipcRenderer } = require('electron');
+const QRCode = require('qrcode');
+
+const BASE = 'http://localhost:3000';
+let serverInfo = null;
+
+let currentQrUrl = null;
+
+async function updateQr(ip, port) {
+  const url = `http://${ip}:${port}`;
+  if (url === currentQrUrl) return;
+  currentQrUrl = url;
+  document.getElementById('server-url').textContent = url;
+  document.getElementById('qr-url').textContent = url;
+  try {
+    await QRCode.toCanvas(document.getElementById('qr-canvas'), url, {
+      width: 180, margin: 1, color: { dark: '#000', light: '#fff' },
+    });
+  } catch(e) { console.error('QR error', e); }
+}
+
+async function init() {
+  serverInfo = await ipcRenderer.invoke('get-server-info');
+  await updateQr(serverInfo.ip, serverInfo.port);
+
+  // Station name
+  try {
+    const cfg = await fetch(BASE + '/api/config').then(r => r.json());
+    document.getElementById('station-name').textContent = cfg.config?.station_name || 'InspectorCam';
+  } catch {}
+
+  document.getElementById('filter-date').value = new Date().toISOString().slice(0, 10);
+
+  await loadInspections();
+  setInterval(loadInspections, 10_000);
+}
+
+async function loadInspections() {
+  const date = document.getElementById('filter-date').value || new Date().toISOString().slice(0, 10);
+  const plateFilter = document.getElementById('filter-plate').value.toUpperCase().trim();
+
+  let inspections = [];
+  let online = true;
+
+  try {
+    const health = await fetch(`${BASE}/api/health`).then(r => r.json());
+    if (health.ip && health.port) await updateQr(health.ip, health.port);
+
+    const res  = await fetch(`${BASE}/api/inspections?date=${date}`);
+    const data = await res.json();
+    inspections = data.inspections || [];
+  } catch {
+    online = false;
+  }
+
+  // Server status indicator
+  const dot  = document.getElementById('server-dot');
+  const text = document.getElementById('server-status-text');
+  if (online) {
+    dot.classList.remove('offline');
+    text.textContent = 'Online';
+  } else {
+    dot.classList.add('offline');
+    text.textContent = 'Offline';
+  }
+
+  if (plateFilter) {
+    inspections = inspections.filter(i => i.plate.includes(plateFilter));
+  }
+
+  document.getElementById('stat-total').textContent = inspections.length;
+
+  const inspectorSet = new Set(inspections.map(i => i.inspector_name));
+  document.getElementById('stat-inspectors').textContent = inspectorSet.size;
+
+  document.getElementById('last-refresh').textContent =
+    'Ultima actualizare: ' + new Date().toLocaleTimeString('ro-RO');
+
+  renderTable(inspections);
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById('inspections-tbody');
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6">
+      <div class="empty-state">
+        <div class="empty-icon"></div>
+        <p>Nicio inspecție pentru data selectată.</p>
+      </div>
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const time = new Date(r.datetime).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+    const folder = r.folder_path ? r.folder_path.split(/[/\\]/).slice(-1)[0] : '—';
+    return `<tr>
+      <td>${esc(time)}</td>
+      <td class="plate-cell">${esc(r.plate)}</td>
+      <td>${esc(r.inspector_name || '—')}</td>
+      <td>${r.photos?.length ?? '—'}</td>
+      <td><span class="badge badge-ok">✓ salvat</span></td>
+      <td style="font-size:11px;color:#666" title="${esc(r.folder_path || '')}">${esc(folder)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function openInspectors() { ipcRenderer.send('open-settings', 'tab-inspectors'); }
+function openSettings()   { ipcRenderer.send('open-settings'); }
+function openFolder()     { ipcRenderer.send('open-itp-folder'); }
+function quitApp()        { ipcRenderer.send('quit-app'); }
+async function installUpdate() { await ipcRenderer.invoke('install-update'); }
+
+// Filter on change
+document.getElementById('filter-date').addEventListener('change', loadInspections);
+document.getElementById('filter-plate').addEventListener('input', loadInspections);
+
+// ── License expiry warning ──
+async function checkLicenseExpiry() {
+  try {
+    const info = await ipcRenderer.invoke('get-license-info');
+    if (!info?.expires_at) return;
+    const days = Math.ceil((new Date(info.expires_at) - Date.now()) / 86_400_000);
+    if (days <= 30) {
+      const bar = document.getElementById('bar-expiry');
+      const msg = days <= 0
+        ? `⚠ Licența InspectorCam a expirat. Contactați gabrielbalcan@yahoo.com pentru reînnoire.`
+        : `⚠ Licența expiră în ${days} ${days === 1 ? 'zi' : 'zile'}. Contactați gabrielbalcan@yahoo.com pentru reînnoire.`;
+      document.getElementById('bar-expiry-msg').textContent = msg;
+      bar.classList.add('show');
+    }
+  } catch {}
+}
+
+// ── Auto-update events ──
+ipcRenderer.on('update-available', (_, info) => {
+  document.getElementById('bar-update-msg').textContent = `Actualizare v${info.version} disponibilă. Se descarcă în fundal…`;
+  document.getElementById('bar-update-available').classList.add('show');
+});
+
+ipcRenderer.on('update-downloaded', (_, info) => {
+  document.getElementById('bar-update-available').classList.remove('show');
+  document.getElementById('bar-ready-msg').textContent = `Actualizare v${info.version} descărcată. Se instalează la închidere.`;
+  document.getElementById('bar-update-ready').style.display = 'flex';
+  document.getElementById('bar-update-ready').classList.add('show');
+});
+
+// ── App version ──
+try {
+  const { remote } = require('electron');
+  document.getElementById('app-version').textContent = remote?.app?.getVersion?.() || '1.0.0';
+} catch {}
+
+init();
+checkLicenseExpiry();
+</script>
+</body>
+</html>

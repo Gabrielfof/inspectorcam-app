@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<title>InspectorCam — Activare</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0B0E15;
+    color: #EDF2F7;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+  }
+  .card {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    text-align: center;
+  }
+  .logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 24px rgba(255,95,31,0.4);
+  }
+  .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #EDF2F7;
+  }
+  p {
+    font-size: 0.88rem;
+    color: #718096;
+    line-height: 1.5;
+  }
+  input {
+    width: 100%;
+    background: #141923;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: #EDF2F7;
+    padding: 14px 16px;
+    font-size: 1rem;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: #FF5F1F; }
+  input::placeholder { color: #4A5568; letter-spacing: 0.05em; text-transform: none; }
+  .btn {
+    width: 100%;
+    background: #FF5F1F;
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.88; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .error {
+    font-size: 0.82rem;
+    color: #FC8181;
+    min-height: 18px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo"><img src="../../../pwa/icons/icon-192.png" alt=""></div>
+  <div>
+    <h1>Activare InspectorCam</h1>
+    <p style="margin-top:8px">Introduceți cheia de licență primită la achiziționarea abonamentului.</p>
+  </div>
+  <input id="key-input" type="text" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19"
+    oninput="formatKey(this)" onkeydown="if(event.key==='Enter') activate()">
+  <div class="error" id="error-msg"></div>
+  <button class="btn" id="activate-btn" onclick="activate()">Activează licența</button>
+  <p style="font-size:0.78rem">Problemă cu licența? Contactați <strong>gabrielbalcan@yahoo.com</strong></p>
+</div>
+
+<script>
+const { ipcRenderer } = require('electron');
+
+function formatKey(input) {
+  let val = input.value.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 16);
+  const parts = val.match(/.{1,4}/g) || [];
+  input.value = parts.join('-');
+}
+
+async function activate() {
+  const key = document.getElementById('key-input').value.trim();
+  const errEl = document.getElementById('error-msg');
+  const btn = document.getElementById('activate-btn');
+
+  if (key.length < 19) {
+    errEl.textContent = 'Introduceți cheia completă (format: XXXX-XXXX-XXXX-XXXX).';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Se verifică…';
+  errEl.textContent = '';
+
+  const result = await ipcRenderer.invoke('activate-license', key);
+
+  if (result.ok) {
+    btn.textContent = '✓ Activat!';
+  } else {
+    errEl.textContent = result.error;
+    btn.disabled = false;
+    btn.textContent = 'Activează licența';
+  }
+}
+</script>
+</body>
+</html>

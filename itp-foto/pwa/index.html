@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="InspectorCam">
+  <meta name="theme-color" content="#FF5F1F">
+  <title>InspectorCam</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- ============================================================
+     LOADING
+     ============================================================ -->
+<div class="screen active" id="screen-loading">
+  <div class="loading-logo"><img src="/icons/icon-192.png" alt=""></div>
+  <div class="loading-title">InspectorCam</div>
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Se conectează la server…</div>
+</div>
+
+<!-- ============================================================
+     LOGIN
+     ============================================================ -->
+<div class="screen" id="screen-login">
+  <div class="login-brand">
+    <div class="login-logo"><img src="/icons/icon-192.png" alt="InspectorCam"></div>
+    <div class="login-app-name">InspectorCam</div>
+    <div class="login-station-label" id="login-station-name"></div>
+  </div>
+
+  <div class="login-datetime">
+    <div class="login-datetime-left">
+      <div class="login-date" id="login-date"></div>
+      <div class="login-inspections-badge" id="login-stat-inspections-wrap">
+        <span class="login-insp-dot"></span>
+        <span id="login-stat-inspections">—</span> inspecții azi
+      </div>
+    </div>
+    <div class="login-time" id="login-time">--:--</div>
+  </div>
+
+  <div class="login-section-label">Selectați inspectorul</div>
+  <div id="inspector-list"></div>
+</div>
+
+<!-- ============================================================
+     HOME
+     ============================================================ -->
+<div class="screen" id="screen-home">
+  <div class="home-header">
+    <div>
+      <div class="home-station" id="home-station-name">InspectorCam</div>
+      <div class="home-inspector" id="home-inspector-name"></div>
+    </div>
+    <button class="logout-btn" onclick="App.logout()">Schimbă inspector</button>
+  </div>
+
+  <div id="active-plates-section">
+    <div id="active-plates-list"></div>
+    <button class="btn-new-plate" onclick="App.startNewInspection()">+ Mașină nouă</button>
+  </div>
+
+  <div class="home-body">
+    <div class="home-section-title">
+      Azi
+      <span class="count-badge" id="today-count">0</span>
+    </div>
+
+    <div id="today-list">
+      <p class="no-inspections">Se încarcă…</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PLATE INPUT
+     ============================================================ -->
+<div class="screen" id="screen-plate">
+  <button class="plate-back" onclick="App.goHome()">← Înapoi</button>
+  <div class="plate-label">Inspecție nouă</div>
+  <div class="plate-title">Număr de înmatriculare</div>
+  <input
+    id="plate-input"
+    type="text"
+    inputmode="text"
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="characters"
+    spellcheck="false"
+    placeholder="BV-33-ABG"
+    oninput="App.formatPlateInput(this)"
+    onkeydown="if(event.key==='Enter') App.confirmPlate()"
+  >
+  <div class="plate-hint">Introduceți numărul exact de înmatriculare.</div>
+  <button class="btn-primary" onclick="App.confirmPlate()">Continuă la fotografiere →</button>
+</div>
+
+<!-- ============================================================
+     CAMERA
+     ============================================================ -->
+<div class="screen" id="screen-camera">
+  <!-- Viewport: video + preview + fallback (toate în același container care funcționează pe iOS) -->
+  <div class="camera-viewport">
+    <video id="camera-video" autoplay playsinline muted></video>
+    <img id="preview-img" class="hidden" alt="Previzualizare fotografie">
+  </div>
+
+  <!-- Top overlay -->
+  <div class="camera-top">
+    <button class="camera-back-btn" onclick="App.prevStep()">←</button>
+    <div class="camera-step-info">
+      <div class="camera-plate-pill" id="camera-plate-indicator"></div>
+      <div class="step-counter-pill" id="step-counter">1 / 6</div>
+      <div class="step-label-text" id="step-label">Față mașină</div>
+      <div class="step-hint-text" id="step-hint"></div>
+    </div>
+  </div>
+
+  <!-- Step instruction overlay (apare înainte de deschiderea camerei) -->
+  <div class="step-instruction hidden" id="step-instruction" onclick="App.startCapture()">
+    <div class="step-instruction-number" id="step-instruction-number"></div>
+    <div class="step-instruction-label" id="step-instruction-label"></div>
+    <div class="step-instruction-cta">Apasă pentru a fotografia</div>
+  </div>
+
+  <!-- Note indicator (top-right when note is set) -->
+  <div class="note-indicator" id="note-indicator"></div>
+
+
+<!-- Fallback când camera nu e disponibilă -->
+  <div id="camera-fallback" class="hidden">
+    <div class="fallback-title">Camera nu este disponibilă</div>
+    <div class="fallback-hint">Folosiți importul din galerie.</div>
+    <button class="fallback-import-btn" onclick="App.importFromGallery()">
+      Alege fotografie din galerie
+    </button>
+  </div>
+
+  <!-- Capture controls (shown while in live camera mode) -->
+  <div class="camera-bottom" id="capture-controls">
+    <button class="btn-import-gallery" onclick="App.importFromGallery()" title="Import din galerie">Galerie</button>
+    <button class="btn-capture" onclick="App.capturePhoto()" aria-label="Fotografiază"></button>
+    <button class="btn-note-camera" onclick="App.openNoteModal()" title="Adaugă notiță">Notiță</button>
+  </div>
+
+  <!-- Preview controls (shown after capture) -->
+  <div class="camera-bottom hidden" id="preview-controls">
+    <button class="btn-retake" onclick="App.retakePhoto()">Refă</button>
+    <button class="btn-finalize" onclick="App.finalizeEarly()">Finalizează</button>
+    <button class="btn-next-step" onclick="App.nextStep()">Continuă →</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     CONFIRM
+     ============================================================ -->
+<div class="screen" id="screen-confirm">
+  <div class="confirm-header">
+    <button class="confirm-back-btn" onclick="App.backToCamera()">←</button>
+    <div class="confirm-title">Confirmare trimitere</div>
+  </div>
+
+  <div class="confirm-body">
+    <div class="form-group">
+      <label class="form-label" for="confirm-plate">Număr înmatriculare</label>
+      <input
+        id="confirm-plate"
+        class="form-input"
+        type="text"
+        inputmode="text"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="characters"
+        spellcheck="false"
+        oninput="App.formatPlateInput(this)"
+      >
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Fotografii ({n})</label>
+      <div id="photos-grid"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="confirm-notes">Observații generale (opțional)</label>
+      <textarea
+        id="confirm-notes"
+        class="form-textarea"
+        placeholder="Observații suplimentare pentru dosar…"
+        rows="3"
+      ></textarea>
+    </div>
+  </div>
+
+  <div class="confirm-footer">
+    <button class="btn-primary" id="submit-btn" onclick="App.submitInspection()">
+      Trimite la calculator
+    </button>
+  </div>
+</div>
+
+<!-- ============================================================
+     SUCCESS
+     ============================================================ -->
+<div class="screen" id="screen-success">
+  <div class="success-icon" id="success-icon">✓</div>
+  <div class="success-title" id="success-title">Salvat!</div>
+  <div class="success-subtitle" id="success-subtitle">Inspecția a fost trimisă la calculator.</div>
+
+  <div class="success-plate" id="success-plate">—</div>
+
+  <div class="success-meta">
+    <div class="meta-row">
+      <span class="meta-key">Fotografii</span>
+      <span class="meta-val" id="success-photos">—</span>
+    </div>
+    <div class="meta-row">
+      <span class="meta-key">Folder</span>
+      <span class="meta-val" id="success-folder" style="font-size:0.7rem;word-break:break-all">—</span>
+    </div>
+  </div>
+
+  <div class="success-actions">
+    <button class="btn-primary" onclick="App.startNewInspection()">Inspecție nouă</button>
+    <button class="btn-secondary" onclick="App.goHome()">← Înapoi acasă</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     ERROR
+     ============================================================ -->
+<div class="screen" id="screen-error">
+  <div class="error-icon">!</div>
+  <div class="error-title">Conexiune eșuată</div>
+  <p id="error-message"></p>
+  <button class="btn-primary" style="margin-top:24px;width:100%;max-width:320px" onclick="App.retryConnection()">
+    Reîncercați
+  </button>
+</div>
+
+<!-- ============================================================
+     NOTE MODAL
+     ============================================================ -->
+<div id="note-modal">
+  <div class="note-modal-card">
+    <div class="note-modal-title">Adaugă notiță</div>
+    <textarea
+      id="note-textarea"
+      placeholder="Ex: rugină prag stâng, far crăpat, km: 187.432…"
+      rows="4"
+    ></textarea>
+    <div class="note-modal-actions">
+      <button class="btn-cancel" onclick="App.closeNoteModal()">Anulează</button>
+      <button class="btn-save-note" onclick="App.saveNote()">Salvează notiță</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PIN MODAL
+     ============================================================ -->
+<div id="pin-modal">
+  <div id="pin-card">
+    <div class="pin-title">PIN inspector</div>
+    <div class="pin-subtitle" id="pin-inspector-name"></div>
+    <input
+      id="pin-input"
+      type="password"
+      inputmode="numeric"
+      maxlength="4"
+      placeholder="• • • •"
+      onkeydown="if(event.key==='Enter') document.getElementById('pin-confirm-btn').click()"
+    >
+    <div class="pin-actions">
+      <button class="btn-cancel" id="pin-cancel-btn">Anulează</button>
+      <button class="btn-save-note" id="pin-confirm-btn">Intră</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="toast"></div>
+
+<!-- Scripts -->
+<script src="/storage.js"></script>
+<script src="/sync.js"></script>
+<script src="/camera.js"></script>
+<script src="/app.js"></script>
+
+</body>
+</html>

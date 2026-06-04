@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 72" fill="currentColor">
+  <defs>
+    <clipPath id="lf">
+      <polygon points="10,4 58,4 52,34 4,34"/>
+    </clipPath>
+    <clipPath id="rf">
+      <polygon points="62,4 110,4 116,34 68,34"/>
+    </clipPath>
+  </defs>
+
+  <!-- Left flag checkerboard (clipped to flag shape) -->
+  <g clip-path="url(#lf)">
+    <rect x="4"  y="4"  width="12" height="10"/>
+    <rect x="28" y="4"  width="12" height="10"/>
+    <rect x="52" y="4"  width="12" height="10"/>
+    <rect x="16" y="14" width="12" height="10"/>
+    <rect x="40" y="14" width="12" height="10"/>
+    <rect x="4"  y="24" width="12" height="10"/>
+    <rect x="28" y="24" width="12" height="10"/>
+    <rect x="52" y="24" width="12" height="10"/>
+  </g>
+  <polygon points="10,4 58,4 52,34 4,34" fill="none" stroke="currentColor" stroke-width="2"/>
+
+  <!-- Right flag checkerboard (clipped to flag shape) -->
+  <g clip-path="url(#rf)">
+    <rect x="62"  y="4"  width="12" height="10"/>
+    <rect x="86"  y="4"  width="12" height="10"/>
+    <rect x="110" y="4"  width="12" height="10"/>
+    <rect x="74"  y="14" width="12" height="10"/>
+    <rect x="98"  y="14" width="12" height="10"/>
+    <rect x="62"  y="24" width="12" height="10"/>
+    <rect x="86"  y="24" width="12" height="10"/>
+    <rect x="110" y="24" width="12" height="10"/>
+  </g>
+  <polygon points="62,4 110,4 116,34 68,34" fill="none" stroke="currentColor" stroke-width="2"/>
+
+  <!-- Poles crossing -->
+  <line x1="14" y1="8"  x2="56" y2="70" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+  <line x1="106" y1="8" x2="64" y2="70" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+</svg>
