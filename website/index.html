@@ -8,7 +8,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,7 +31,7 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Urbanist', sans-serif;
   background: var(--bg);
   color: var(--text);
   overflow-x: hidden;
@@ -40,7 +40,7 @@ body {
 
 /* ── Typography ── */
 h1, h2, h3, .display {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Urbanist', sans-serif;
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
@@ -86,7 +86,7 @@ nav {
   font-size: 16px;
 }
 .nav-logo-text {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Urbanist', sans-serif;
   font-weight: 800;
   font-size: 1.05rem;
   letter-spacing: -0.01em;
@@ -141,6 +141,41 @@ nav {
   pointer-events: none;
 }
 
+/* ── Hero floating mechanic icons ── */
+.hero-float-icons {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.hfi {
+  position: absolute;
+  opacity: 1;
+}
+.hfi-1 { top: 12%; left: 6%; animation: hfloat1 7s ease-in-out infinite; }
+.hfi-2 { top: 65%; left: 4%; animation: hfloat2 9s ease-in-out infinite 1s; }
+.hfi-3 { top: 20%; left: 78%; animation: hfloat3 8s ease-in-out infinite 0.5s; }
+.hfi-4 { top: 72%; left: 88%; animation: hfloat1 6s ease-in-out infinite 2s; }
+.hfi-5 { top: 40%; left: 2%; animation: hfloat2 10s ease-in-out infinite 0.8s; }
+.hfi-6 { top: 8%; left: 88%; animation: hfloat3 7.5s ease-in-out infinite 1.5s; }
+.hfi-7 { top: 55%; left: 75%; animation: hfloat1 8.5s ease-in-out infinite 0.3s; }
+.hfi-8 { top: 85%; left: 15%; animation: hfloat2 9.5s ease-in-out infinite 1.2s; }
+
+@keyframes hfloat1 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%  { transform: translateY(-14px) rotate(3deg); }
+  66%  { transform: translateY(-6px) rotate(-2deg); }
+}
+@keyframes hfloat2 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  40%  { transform: translateY(12px) rotate(-4deg); }
+  70%  { transform: translateY(4px) rotate(2deg); }
+}
+@keyframes hfloat3 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%  { transform: translateY(-10px) rotate(5deg); }
+}
+
 .hero-grid {
   position: absolute;
   inset: 0;
@@ -191,6 +226,7 @@ nav {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  filter: drop-shadow(0 0 20px rgba(255,95,31,0.6)) drop-shadow(0 0 40px rgba(255,95,31,0.3));
 }
 
 .hero-sub {
@@ -297,7 +333,7 @@ nav {
   border-radius: 8px;
   padding: 10px;
   text-align: center;
-  font-family: 'Syne', sans-serif;
+  font-family: 'Urbanist', sans-serif;
   font-size: 1.1rem;
   color: var(--accent);
   letter-spacing: 0.08em;
@@ -364,6 +400,18 @@ nav {
 .cam-corner.bl { bottom: 8px; left: 8px; border-bottom-width: 2px; border-left-width: 2px; }
 .cam-corner.br { bottom: 8px; right: 8px; border-bottom-width: 2px; border-right-width: 2px; }
 
+.phone-insp {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; padding: 8px 10px;
+  font-size: 0.72rem; color: #94a3b8; font-weight: 600; cursor: pointer;
+  transition: all 0.3s;
+}
+.phone-insp.active-insp {
+  background: rgba(255,95,31,0.1); border-color: rgba(255,95,31,0.3); color: #FF8C55;
+  box-shadow: 0 0 10px rgba(255,95,31,0.15);
+}
+
 /* Floating cards around phone */
 .float-card {
   position: absolute;
@@ -424,9 +472,10 @@ section {
 }
 
 .section-label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -434,12 +483,14 @@ section {
   color: var(--accent);
   margin-bottom: 16px;
 }
-.section-label::before {
+.section-label::before,
+.section-label::after {
   content: '';
-  display: inline-block;
-  width: 20px; height: 2px;
+  width: 32px; height: 1px;
   background: var(--accent);
+  opacity: 0.5;
   border-radius: 2px;
+  flex-shrink: 0;
 }
 
 .section-title {
@@ -447,6 +498,13 @@ section {
   font-weight: 800;
   margin-bottom: 16px;
   max-width: 700px;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+.section-title .og {
+  color: #FF5F1F;
+  text-shadow: 0 0 20px rgba(255,95,31,0.55), 0 0 40px rgba(255,95,31,0.25);
 }
 
 .section-sub {
@@ -455,6 +513,9 @@ section {
   max-width: 560px;
   line-height: 1.7;
   margin-bottom: 60px;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ── Problem/Solution ── */
@@ -495,7 +556,7 @@ section {
   align-items: center;
   gap: 10px;
   margin-bottom: 24px;
-  font-family: 'Syne', sans-serif;
+  font-family: 'Urbanist', sans-serif;
   font-size: 1rem;
   font-weight: 700;
 }
@@ -526,15 +587,23 @@ section {
   line-height: 1.5;
 }
 
+.compare-item { align-items: center; }
 .compare-item::before {
+  content: '';
   flex-shrink: 0;
-  margin-top: 2px;
-  font-size: 14px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  display: block;
 }
-
-.compare-card.bad  .compare-item::before { content: '✗'; color: #e53e3e; }
-.compare-card.good .compare-item::before { content: '✓'; color: var(--success); }
-.compare-card.good .compare-item { color: var(--text); }
+.compare-bad .compare-item::before {
+  background: #e53e3e;
+  box-shadow: 0 0 6px rgba(229,62,62,0.6);
+}
+.compare-good .compare-item::before {
+  background: #FF5F1F;
+  box-shadow: 0 0 10px rgba(255,95,31,0.9), 0 0 20px rgba(255,95,31,0.4);
+}
+.compare-good .compare-item { color: var(--text); }
 
 /* ── Features ── */
 #features { background: var(--bg2); }
@@ -582,7 +651,7 @@ section {
 }
 
 .feature-title {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Urbanist', sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
   margin-bottom: 10px;
@@ -623,7 +692,7 @@ section {
   border: 1px solid rgba(255,95,31,0.3);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Syne', sans-serif;
+  font-family: 'Urbanist', sans-serif;
   font-size: 1.5rem;
   font-weight: 800;
   color: var(--accent);
@@ -634,7 +703,7 @@ section {
 }
 
 .step-title {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Urbanist', sans-serif;
   font-size: 1.1rem;
   font-weight: 700;
   margin-bottom: 10px;
@@ -685,7 +754,7 @@ section {
 }
 
 .pricing-price {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Urbanist', sans-serif;
   font-size: 3.5rem;
   font-weight: 800;
   line-height: 1;
@@ -776,7 +845,7 @@ section {
 }
 
 .download-os {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Urbanist', sans-serif;
   font-size: 1rem;
   font-weight: 700;
 }
@@ -818,7 +887,7 @@ footer {
 }
 
 .footer-logo {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Urbanist', sans-serif;
   font-size: 1.2rem;
   font-weight: 800;
   color: var(--accent);
@@ -870,28 +939,72 @@ footer {
 .reveal-delay-2 { transition-delay: 0.2s; }
 .reveal-delay-3 { transition-delay: 0.3s; }
 
-/* ── Responsive ── */
+/* ── Responsive tablet ── */
 @media (max-width: 900px) {
   .features-grid { grid-template-columns: 1fr 1fr; }
   .compare { grid-template-columns: 1fr; }
-  .steps { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; gap: 0; }
   .steps::before { display: none; }
-  .step { padding: 20px 0; border-bottom: 1px solid var(--border); }
+  .step { padding: 28px 16px; border-bottom: 1px solid var(--border); text-align: center; }
   .step:last-child { border-bottom: none; }
+  .step-num { margin-bottom: 16px; }
   .float-card { display: none; }
-  .hero-visual { margin-top: 0; }
+  .hero-visual { margin-top: 20px; }
 }
 
+/* ── Responsive mobile ── */
 @media (max-width: 600px) {
-  nav { padding: 16px 20px; }
+  nav { padding: 14px 16px; }
   nav .nav-links { display: none; }
-  section { padding: 70px 20px; }
-  .hero { padding: 100px 20px 60px; }
-  .features-grid { grid-template-columns: 1fr; }
-  .download-grid { grid-template-columns: 1fr; max-width: 280px; }
-  .pricing-card { padding: 32px 24px; }
-  .hero-actions { flex-direction: column; align-items: center; }
-  .btn-primary, .btn-secondary { width: 100%; justify-content: center; max-width: 300px; }
+
+  section { padding: 60px 16px; }
+
+  .hero {
+    padding: 90px 16px 50px;
+    text-align: center;
+    min-height: auto;
+  }
+  .hero-float-icons { display: none; }
+  .hero-badge { margin: 0 auto 20px; }
+
+  .hero-title { font-size: 2.2rem; margin-bottom: 16px; }
+  .hero-sub { font-size: 0.95rem; margin-bottom: 28px; }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    max-width: 320px;
+    justify-content: center;
+    padding: 14px 20px;
+    font-size: 0.95rem;
+  }
+
+  .phone-frame { width: 200px; height: 360px; }
+
+  .features-grid { grid-template-columns: 1fr; gap: 12px; }
+  .feature-card { padding: 20px; }
+
+  .compare { grid-template-columns: 1fr; gap: 12px; }
+  .compare-card { padding: 22px; }
+
+  .section-title { font-size: 1.7rem; }
+  .section-sub { font-size: 0.9rem; margin-bottom: 36px; }
+
+  .pricing-card { padding: 28px 20px; }
+  .pricing-price { font-size: 2.8rem; }
+
+  .steps { grid-template-columns: 1fr; }
+  .step { padding: 24px 12px; }
+  .step-num { width: 56px; height: 56px; font-size: 1.2rem; }
+
+  .container { padding: 0 4px; }
+
+  footer { padding: 32px 16px; }
 }
 </style>
 </head>
@@ -900,14 +1013,14 @@ footer {
 <!-- Nav -->
 <nav>
   <a class="nav-logo" href="#">
-    <div class="nav-logo-icon">📷</div>
+    <div class="nav-logo-icon"><img src="icon.png" alt="InspectorCam" style="width:100%;height:100%;object-fit:cover;border-radius:8px;display:block"></div>
     <span class="nav-logo-text">InspectorCam</span>
   </a>
   <ul class="nav-links">
     <li><a href="#features">Funcționalități</a></li>
     <li><a href="#how">Cum funcționează</a></li>
     <li><a href="#pricing">Prețuri</a></li>
-    <li><a href="#download" class="nav-cta">Descarcă</a></li>
+    <li><a href="#download" class="nav-cta">Obține acces</a></li>
   </ul>
 </nav>
 
@@ -915,6 +1028,26 @@ footer {
 <section class="hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
+
+  <!-- Floating mechanic icons -->
+  <div class="hero-float-icons" aria-hidden="true">
+    <!-- Cheie fixă -->
+    <svg class="hfi hfi-1" width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="rgba(255,95,31,0.55)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 8px rgba(255,95,31,0.4))"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+    <!-- Mașină -->
+    <svg class="hfi hfi-2" width="130" height="80" viewBox="0 0 64 40" fill="none" stroke="rgba(255,95,31,0.45)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 10px rgba(255,95,31,0.35))"><path d="M8 28 L6 20 L16 10 L48 10 L58 20 L56 28 Z"/><circle cx="16" cy="30" r="5"/><circle cx="48" cy="30" r="5"/><path d="M16 10 L20 18 L44 18 L48 10"/><line x1="2" y1="22" x2="8" y2="22"/><line x1="56" y1="22" x2="62" y2="22"/></svg>
+    <!-- Cheie reglabilă -->
+    <svg class="hfi hfi-3" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="rgba(255,95,31,0.5)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 7px rgba(255,95,31,0.38))"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+    <!-- Suspensie / arc -->
+    <svg class="hfi hfi-4" width="56" height="100" viewBox="0 0 32 56" fill="none" stroke="rgba(255,95,31,0.48)" stroke-width="1.4" stroke-linecap="round" style="filter:drop-shadow(0 0 6px rgba(255,95,31,0.35))"><line x1="16" y1="2" x2="16" y2="8"/><path d="M4 8 L28 8 L28 14 L4 14 L4 20 L28 20 L28 26 L4 26 L4 32 L28 32 L28 38 L4 38"/><line x1="16" y1="38" x2="16" y2="54"/><line x1="4" y1="54" x2="28" y2="54"/></svg>
+    <!-- Cheie hex -->
+    <svg class="hfi hfi-5" width="76" height="76" viewBox="0 0 24 24" fill="none" stroke="rgba(255,95,31,0.45)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 8px rgba(255,95,31,0.35))"><polygon points="12 2 19 6 19 18 12 22 5 18 5 6"/><circle cx="12" cy="12" r="3"/></svg>
+    <!-- Cameră foto -->
+    <svg class="hfi hfi-6" width="100" height="84" viewBox="0 0 52 44" fill="none" stroke="rgba(255,95,31,0.55)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 10px rgba(255,95,31,0.42))"><path d="M4 12 L4 36 Q4 40 8 40 L44 40 Q48 40 48 36 L48 12 Q48 8 44 8 L38 8 L34 3 L18 3 L14 8 L8 8 Q4 8 4 12 Z"/><circle cx="26" cy="24" r="8"/><circle cx="26" cy="24" r="4"/><circle cx="40" cy="14" r="2"/></svg>
+    <!-- Număr înmatriculare -->
+    <svg class="hfi hfi-7" width="140" height="56" viewBox="0 0 80 32" fill="none" stroke="rgba(255,95,31,0.5)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 8px rgba(255,95,31,0.38))"><rect x="2" y="2" width="76" height="28" rx="4"/><rect x="6" y="5" width="8" height="22" rx="2" fill="rgba(255,95,31,0.12)"/><text x="18" y="21" font-size="12" font-family="monospace" fill="rgba(255,95,31,0.6)" stroke="none">BV·33·ABG</text></svg>
+    <!-- Șurubelniță -->
+    <svg class="hfi hfi-8" width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="rgba(255,95,31,0.48)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 7px rgba(255,95,31,0.35))"><line x1="12" y1="2" x2="12" y2="15"/><path d="M6 8 Q6 15 12 15 Q18 15 18 8"/><line x1="12" y1="15" x2="12" y2="22"/></svg>
+  </div>
 
   <div class="container" style="position:relative;z-index:1">
     <div class="hero-badge">
@@ -933,11 +1066,9 @@ footer {
 
     <div class="hero-actions">
       <a href="#download" class="btn-primary">
-        <span class="btn-icon">⬇</span>
-        Descarcă gratuit
+        Solicită ofertă
       </a>
       <a href="#how" class="btn-secondary">
-        <span class="btn-icon">▶</span>
         Cum funcționează
       </a>
     </div>
@@ -945,25 +1076,43 @@ footer {
     <!-- Phone mockup -->
     <div class="hero-visual">
       <div class="phone-frame">
-        <div class="phone-screen">
-          <div class="phone-status">
-            <span>9:41</span>
-            <span>InspectorCam</span>
+        <div class="phone-screen" id="phone-screen-login" style="padding:20px 14px 14px;gap:0">
+          <!-- Status bar -->
+          <div class="phone-status" style="margin-bottom:14px">
+            <span>9:41</span><span>●●●</span>
           </div>
-          <div class="phone-plate" id="demo-plate">B-298-FOV</div>
-          <div class="phone-steps" id="demo-steps">
-            <div class="phone-step done"><span class="step-icon">✓</span>Față vehicul</div>
-            <div class="phone-step done"><span class="step-icon">✓</span>Spate vehicul</div>
-            <div class="phone-step active"><span class="step-icon">📷</span>Lateral stânga</div>
-            <div class="phone-step"><span class="step-icon">○</span>Lateral dreapta</div>
-            <div class="phone-step"><span class="step-icon">○</span>Bord / VIN</div>
+          <!-- Brand -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:14px">
+            <img src="icon.png" alt="" style="width:36px;height:36px;border-radius:10px;box-shadow:0 0 12px rgba(255,95,31,0.4)">
+            <div style="font-weight:800;font-size:0.9rem;letter-spacing:-0.01em;color:#EDF2F7">InspectorCam</div>
+            <div style="font-size:0.65rem;color:#64748b">Stație ITP Demo</div>
           </div>
-          <div class="phone-cam">
-            <div class="cam-corner tl"></div>
-            <div class="cam-corner tr"></div>
-            <div class="cam-corner bl"></div>
-            <div class="cam-corner br"></div>
-            🚗
+          <!-- Date + badge -->
+          <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:7px 10px;margin-bottom:12px">
+            <div>
+              <div style="font-size:0.62rem;color:#64748b">Joi, 5 Iunie 2026</div>
+              <div style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,95,31,0.12);border:1px solid rgba(255,95,31,0.25);border-radius:12px;padding:2px 7px;margin-top:3px">
+                <span style="width:5px;height:5px;border-radius:50%;background:#FF5F1F;display:inline-block"></span>
+                <span style="font-size:0.6rem;color:#FF8C55;font-weight:700" id="demo-badge">7 inspecții azi</span>
+              </div>
+            </div>
+            <div style="font-size:1.1rem;font-weight:800;color:#EDF2F7" id="demo-clock">09:41</div>
+          </div>
+          <!-- Inspector list -->
+          <div style="font-size:0.6rem;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Selectați inspectorul</div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <div class="phone-insp active-insp">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FF8C55" stroke-width="2.5" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+              Ion Popescu
+            </div>
+            <div class="phone-insp">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+              Mihai Ionescu
+            </div>
+            <div class="phone-insp">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+              Andrei Marin
+            </div>
           </div>
         </div>
       </div>
@@ -993,16 +1142,18 @@ footer {
 <section id="compare" style="background:var(--bg2)">
   <div class="container">
     <div class="section-label">Înainte vs. după</div>
-    <h2 class="section-title reveal">Documentezi acum cu un sistem improvizat?</h2>
+    <h2 class="section-title reveal">Documentezi acum cu <span class="og">un sistem improvizat?</span></h2>
     <p class="section-sub reveal reveal-delay-1">Majoritatea stațiilor ITP pierd timp prețios cu fotografii dezorganizate, foldere manuale și fișiere imposibil de găsit ulterior.</p>
 
     <div class="compare">
       <div class="compare-card bad reveal">
         <div class="compare-head">
-          <div class="compare-icon bad">✗</div>
+          <div class="compare-icon bad">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
           Fără InspectorCam
         </div>
-        <ul class="compare-items">
+        <ul class="compare-items compare-bad">
           <li>Fotografii împrăștiate în Galerie, fără ordine</li>
           <li>Foldere create manual, inconsistent</li>
           <li>Nu știi câte inspecții ai făcut azi</li>
@@ -1014,10 +1165,12 @@ footer {
 
       <div class="compare-card good reveal reveal-delay-1">
         <div class="compare-head">
-          <div class="compare-icon good">✓</div>
+          <div class="compare-icon good">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 4px rgba(255,95,31,0.6))"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
           Cu InspectorCam
         </div>
-        <ul class="compare-items">
+        <ul class="compare-items compare-good">
           <li>Dosarul se creează automat la fiecare vehicul</li>
           <li>Organizat după an / lună / zi / număr înmatriculare</li>
           <li>Dashboard cu toate inspecțiile zilei, în timp real</li>
@@ -1034,37 +1187,49 @@ footer {
 <section id="features">
   <div class="container">
     <div class="section-label">Funcționalități</div>
-    <h2 class="section-title reveal">Tot ce ai nevoie, nimic în plus.</h2>
+    <h2 class="section-title reveal">Tot ce ai nevoie, <span class="og">nimic în plus.</span></h2>
     <p class="section-sub reveal reveal-delay-1">Construit specific pentru stații ITP din România. Simplu, rapid, fără cloud, fără abonamente la servicii externe.</p>
 
     <div class="features-grid">
       <div class="feature-card reveal">
-        <div class="feature-icon">📱</div>
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="16" r="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="9" x2="13" y2="9"/></svg>
+        </div>
         <div class="feature-title">Fotografiere de pe orice telefon</div>
         <div class="feature-desc">Orice telefon conectat la WiFi-ul stației devine cameră profesionistă. Scanezi un QR și ești gata.</div>
       </div>
       <div class="feature-card reveal reveal-delay-1">
-        <div class="feature-icon">📁</div>
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4v10l-9 4-9-4V7z"/><polyline points="3 7 12 11 21 7"/><line x1="12" y1="11" x2="12" y2="21"/></svg>
+        </div>
         <div class="feature-title">Organizare automată</div>
         <div class="feature-desc">Fiecare vehicul primește propriul dosar: <code style="color:var(--accent);font-size:0.8em">2026 / Iunie / 5 / BV-33-ABG</code>. Niciodată mai cauți manual.</div>
       </div>
       <div class="feature-card reveal reveal-delay-2">
-        <div class="feature-icon">🔢</div>
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
         <div class="feature-title">Etape fotografiere ghidate</div>
         <div class="feature-desc">Inspectorul urmează pași predefinit — față, spate, laterale, bord, VIN — cu ghidaj vizual clar.</div>
       </div>
       <div class="feature-card reveal">
-        <div class="feature-icon">📊</div>
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><polyline points="7 10 10 13 17 8"/></svg>
+        </div>
         <div class="feature-title">Dashboard live</div>
         <div class="feature-desc">Toate inspecțiile zilei, cu inspector, oră și număr de fotografii. Actualizare automată din 10 în 10 secunde.</div>
       </div>
       <div class="feature-card reveal reveal-delay-1">
-        <div class="feature-icon">👥</div>
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
         <div class="feature-title">Mai mulți inspectori</div>
         <div class="feature-desc">Fiecare inspector se loghează cu numele lui. Fiecare inspecție este asociată corect, automat.</div>
       </div>
       <div class="feature-card reveal reveal-delay-2">
-        <div class="feature-icon">🔒</div>
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
         <div class="feature-title">Date locale, 100%</div>
         <div class="feature-desc">Nimic nu ajunge în cloud. Toate fotografiile rămân pe calculatorul stației. Sigur și conform GDPR.</div>
       </div>
@@ -1076,7 +1241,7 @@ footer {
 <section id="how" style="background:var(--bg2)">
   <div class="container">
     <div class="section-label">Cum funcționează</div>
-    <h2 class="section-title reveal">3 pași. Atât.</h2>
+    <h2 class="section-title reveal">3 pași. <span class="og">Atât.</span></h2>
     <p class="section-sub reveal reveal-delay-1">De la instalare la prima inspecție documentată în mai puțin de 5 minute.</p>
 
     <div class="steps">
@@ -1102,14 +1267,14 @@ footer {
 <!-- Pricing -->
 <section id="pricing">
   <div class="container" style="text-align:center">
-    <div class="section-label" style="justify-content:center">Prețuri</div>
-    <h2 class="section-title reveal" style="margin:0 auto 16px">Un singur abonament.<br>Totul inclus.</h2>
+    <div class="section-label" >Prețuri</div>
+    <h2 class="section-title reveal" style="margin:0 auto 16px">Un singur abonament.<br><span class="og">Totul inclus.</span></h2>
     <p class="section-sub reveal reveal-delay-1" style="margin:0 auto 50px">Fără costuri ascunse, fără limitări de fotografii, fără abonament la cloud.</p>
 
     <div class="pricing-card reveal">
       <div class="pricing-badge">Abonament anual</div>
-      <div class="pricing-price">Contact <span style="font-size:1rem">pentru preț</span></div>
-      <div class="pricing-period">per stație ITP / 12 luni</div>
+      <div class="pricing-price">150 <span>lei</span></div>
+      <div class="pricing-period">per stație ITP / an <span style="font-size:0.75rem;color:var(--muted)">· + TVA</span></div>
 
       <ul class="pricing-features">
         <li>Fotografii nelimitate</li>
@@ -1132,29 +1297,60 @@ footer {
 <!-- Download -->
 <section id="download">
   <div class="container">
-    <div class="section-label" style="justify-content:center">Descarcă</div>
-    <h2 class="section-title reveal" style="text-align:center;margin:0 auto 16px">Începe acum. E gratuit.</h2>
-    <p class="section-sub reveal reveal-delay-1" style="text-align:center;margin:0 auto 48px">Descarcă, instalează, activează licența. În 5 minute documentezi prima inspecție.</p>
+    <div class="section-label" >Descarcă</div>
+    <h2 class="section-title reveal" style="margin:0 auto 16px">Ești activ <span class="og">în câteva momente.</span></h2>
+    <p class="section-sub reveal reveal-delay-1" style="text-align:center;margin:0 auto 48px">Trimiți emailul, plătești, primești cheia de licență și linkul de descărcare. Instalezi și documentezi prima inspecție în aceeași zi.</p>
 
-    <div class="download-grid reveal">
-      <a class="download-card" href="https://github.com/Gabrielfof/inspectorcam-app/releases/latest/download/InspectorCam-1.0.0-arm64.dmg">
-        <div class="download-os-icon"></div>
-        <div class="download-os">macOS</div>
-        <div class="download-desc">macOS 12+ · Apple Silicon & Intel</div>
-        <div class="download-btn">Descarcă .dmg</div>
+    <div class="reveal" style="max-width:560px;margin:0 auto">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:40px;text-align:left">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:12px">Solicită acces</div>
+        <p style="color:var(--muted2);font-size:0.95rem;line-height:1.7;margin-bottom:24px">
+          Trimite-ne un email cu denumirea stației tale. Plătești 150 lei + TVA, primești cheia de licență și linkul de descărcare instant.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:12px;font-size:0.88rem;color:var(--muted2)">
+            <span style="color:var(--success);font-size:1rem">✓</span> Disponibil pentru Windows 10/11 și macOS
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:0.88rem;color:var(--muted2)">
+            <span style="color:var(--success);font-size:1rem">✓</span> Instalare ghidată de la distanță inclusă
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:0.88rem;color:var(--muted2)">
+            <span style="color:var(--success);font-size:1rem">✓</span> Activ în aceeași zi — cheia de licență imediat după plată
+          </div>
+        </div>
+        <a href="mailto:gabrielbalcan@yahoo.com?subject=Solicit%20InspectorCam%20-%20Statie%20ITP&body=Buna%20ziua%2C%0A%0ASunt%20interesat%20de%20InspectorCam%20pentru%20statia%20mea%20ITP.%0A%0ADenumire%20statie%3A%20%0ATelefon%3A%20%0A%0AMultumesc!" class="btn-primary" style="display:inline-flex;justify-content:center;width:100%">
+          Trimite email pentru acces
+        </a>
+        <p style="font-size:0.78rem;color:var(--muted);margin-top:14px;text-align:center">
+          sau scrie direct la <a href="mailto:gabrielbalcan@yahoo.com" style="color:var(--accent2);text-decoration:none">gabrielbalcan@yahoo.com</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Download temporar testare -->
+<section style="background:#0d1018;border-top:1px dashed rgba(255,95,31,0.2);border-bottom:1px dashed rgba(255,95,31,0.2);padding:40px">
+  <div style="max-width:600px;margin:0 auto;text-align:center">
+    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,190,11,0.1);border:1px solid rgba(255,190,11,0.25);border-radius:20px;padding:4px 14px;font-size:0.75rem;font-weight:700;color:#FFBE0B;margin-bottom:16px;letter-spacing:0.05em;text-transform:uppercase">
+      ⚠ Temporar — Varianta de testare
+    </div>
+    <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:8px;color:#EDF2F7">Descarcă pentru testare</h3>
+    <p style="font-size:0.85rem;color:#64748b;margin-bottom:24px">Aceste linkuri sunt temporare și vor fi eliminate după finalizarea testelor.</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap" id="dl-buttons">
+      <a id="dl-mac" href="#"
+         style="display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 22px;color:#EDF2F7;text-decoration:none;font-size:0.9rem;font-weight:600;transition:all 0.2s"
+         onmouseover="this.style.borderColor='rgba(255,95,31,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.12)'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span id="dl-mac-label">macOS (.dmg)</span>
       </a>
-      <a class="download-card" href="https://github.com/Gabrielfof/inspectorcam-app/releases/latest/download/InspectorCam-Setup-1.0.0.exe">
-        <div class="download-os-icon">🪟</div>
-        <div class="download-os">Windows</div>
-        <div class="download-desc">Windows 10 / 11 · 64-bit</div>
-        <div class="download-btn">Descarcă .exe</div>
+      <a id="dl-win" href="#"
+         style="display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 22px;color:#EDF2F7;text-decoration:none;font-size:0.9rem;font-weight:600;transition:all 0.2s"
+         onmouseover="this.style.borderColor='rgba(255,95,31,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.12)'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span id="dl-win-label">Windows (.exe)</span>
       </a>
     </div>
-
-    <p class="download-note reveal reveal-delay-1">
-      Ai nevoie de o cheie de licență pentru a activa aplicația.<br>
-      <a href="mailto:gabrielbalcan@yahoo.com?subject=Solicit%20licenta%20InspectorCam" style="color:var(--accent2);text-decoration:none">Contactează-ne</a> pentru a obține cheia ta.
-    </p>
   </div>
 </section>
 
@@ -1169,6 +1365,29 @@ footer {
 </footer>
 
 <script>
+// Download links — preia automat ultima versiune din GitHub
+fetch('https://api.github.com/repos/Gabrielfof/inspectorcam-app/releases/latest')
+  .then(r => r.json())
+  .then(release => {
+    const v = release.tag_name || '';
+    const assets = release.assets || [];
+    const exe = assets.find(a => a.name.endsWith('.exe'));
+    const dmg = assets.find(a => a.name.endsWith('.dmg'));
+    if (exe) {
+      document.getElementById('dl-win').href = exe.browser_download_url;
+      document.getElementById('dl-win-label').textContent = `Windows (.exe) — ${v}`;
+    }
+    if (dmg) {
+      document.getElementById('dl-mac').href = dmg.browser_download_url;
+      document.getElementById('dl-mac-label').textContent = `macOS (.dmg) — ${v}`;
+    }
+  })
+  .catch(() => {
+    // fallback dacă API-ul nu răspunde
+    document.getElementById('dl-win').href = 'https://github.com/Gabrielfof/inspectorcam-app/releases/latest';
+    document.getElementById('dl-mac').href = 'https://github.com/Gabrielfof/inspectorcam-app/releases/latest';
+  });
+
 // Scroll reveal
 const observer = new IntersectionObserver(entries => {
   entries.forEach(e => {
