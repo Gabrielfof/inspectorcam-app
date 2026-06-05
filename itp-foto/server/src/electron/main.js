@@ -309,7 +309,7 @@ async function quit() {
 ipcMain.handle('get-server-info', () => serverInfo);
 ipcMain.handle('get-app-version', () => app.getVersion());
 ipcMain.handle('get-license-info', () => licenseInfo);
-ipcMain.handle('install-update', () => { if (autoUpdater) autoUpdater.quitAndInstall(); });
+ipcMain.handle('install-update', () => { if (autoUpdater) { app.isQuitting = true; autoUpdater.quitAndInstall(true, true); } });
 
 ipcMain.handle('choose-folder', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog(settingsWindow, {
