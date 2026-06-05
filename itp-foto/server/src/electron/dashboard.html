@@ -24,6 +24,7 @@
     background: var(--bg);
     color: var(--text);
     display: flex;
+    flex-direction: column;
     height: 100vh;
     overflow: hidden;
     font-size: 14px;
@@ -269,7 +270,7 @@
   <button class="notif-dismiss" onclick="this.closest('.notif-bar').classList.remove('show')">✕</button>
 </div>
 
-<div style="display:flex;flex-direction:column;height:100vh;overflow:hidden">
+<div style="display:flex;flex:1;overflow:hidden">
 
 <!-- ── Sidebar ── -->
 <aside class="sidebar">
@@ -318,9 +319,6 @@
   </div>
 </aside>
 
-<!-- ── Main wrapper (flex row for sidebar + main) ── -->
-<div style="display:flex;flex:1;overflow:hidden">
-
 <!-- ── Main ── -->
 <main class="main">
   <div class="topbar">
@@ -356,8 +354,7 @@
   </div>
 </main>
 
-</div><!-- end flex row -->
-</div><!-- end outer column -->
+</div>
 
 <script>
 const { ipcRenderer } = require('electron');

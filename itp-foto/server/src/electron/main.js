@@ -10,7 +10,7 @@ const { autoUpdater } = require('electron-updater');
 app.setName('InspectorCam');
 
 // Fix ecran negru pe Windows cu plăci video incompatibile
-app.disableHardwareAcceleration();
+if (process.platform === 'win32') app.disableHardwareAcceleration();
 
 // Permitem o singură instanță a aplicației
 if (!app.requestSingleInstanceLock()) {
