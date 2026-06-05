@@ -43,6 +43,8 @@ nsis:
   include: build-resources/installer.nsh
 
 mac:
-  target: dmg
+  target:
+    - target: dmg
+      arch: [x64, arm64]
   icon: "build-resources/icon.icns"
   category: public.app-category.business
