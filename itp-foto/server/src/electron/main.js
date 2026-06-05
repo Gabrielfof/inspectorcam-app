@@ -131,19 +131,28 @@ function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
+  autoUpdater.on('error', err => {
+    console.error('[updater] Eroare:', err.message);
+  });
+
   autoUpdater.on('update-available', info => {
+    console.log('[updater] Actualizare disponibilă:', info.version);
     if (mainWindow) mainWindow.webContents.send('update-available', { version: info.version });
   });
 
-  autoUpdater.on('update-downloaded', info => {
-    if (mainWindow) mainWindow.webContents.send('update-downloaded', { version: info.version });
-    // Instalează automat după 5 secunde — fără intervenție utilizator
-    setTimeout(() => {
-      autoUpdater.quitAndInstall(true, true);
-    }, 5000);
+  autoUpdater.on('download-progress', progress => {
+    console.log(`[updater] Descărcare: ${Math.round(progress.percent)}%`);
   });
 
-  autoUpdater.checkForUpdates().catch(() => {});
+  autoUpdater.on('update-downloaded', info => {
+    console.log('[updater] Descărcare completă:', info.version);
+    if (mainWindow) mainWindow.webContents.send('update-downloaded', { version: info.version });
+    setTimeout(() => {
+      autoUpdater.quitAndInstall(true, true);
+    }, 3000);
+  });
+
+  autoUpdater.checkForUpdates().catch(err => console.error('[updater] checkForUpdates:', err.message));
   setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 6 * 60 * 60 * 1_000);
 }
 

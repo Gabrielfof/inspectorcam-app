@@ -34,8 +34,8 @@ win:
   requestedExecutionLevel: requireAdministrator
 
 nsis:
-  oneClick: false
-  allowToChangeInstallationDirectory: true
+  oneClick: true
+  perMachine: false
   createDesktopShortcut: true
   createStartMenuShortcut: true
   runAfterFinish: true
@@ -45,6 +45,8 @@ nsis:
 mac:
   target:
     - target: dmg
+      arch: [x64, arm64]
+    - target: zip
       arch: [x64, arm64]
   icon: "build-resources/icon.icns"
   category: public.app-category.business
