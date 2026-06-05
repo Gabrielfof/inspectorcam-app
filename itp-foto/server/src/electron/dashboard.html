@@ -509,10 +509,9 @@ ipcRenderer.on('update-downloaded', (_, info) => {
 });
 
 // ── App version ──
-try {
-  const { remote } = require('electron');
-  document.getElementById('app-version').textContent = remote?.app?.getVersion?.() || '1.0.0';
-} catch {}
+ipcRenderer.invoke('get-app-version').then(v => {
+  document.getElementById('app-version').textContent = v || '1.0.0';
+}).catch(() => {});
 
 init();
 checkLicenseExpiry();

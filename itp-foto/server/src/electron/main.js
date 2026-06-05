@@ -5,7 +5,7 @@ const path  = require('path');
 const os    = require('os');
 const fs    = require('fs');
 const https = require('https');
-const { autoUpdater } = require('electron-updater');
+let autoUpdater = null;
 
 app.setName('InspectorCam');
 
@@ -128,6 +128,7 @@ async function startMainApp() {
 }
 
 function setupAutoUpdater() {
+  autoUpdater = require('electron-updater').autoUpdater;
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
@@ -305,8 +306,9 @@ async function quit() {
 // ── IPC ───────────────────────────────────────────────────────────────────────
 
 ipcMain.handle('get-server-info', () => serverInfo);
+ipcMain.handle('get-app-version', () => app.getVersion());
 ipcMain.handle('get-license-info', () => licenseInfo);
-ipcMain.handle('install-update', () => { autoUpdater.quitAndInstall(); });
+ipcMain.handle('install-update', () => { if (autoUpdater) autoUpdater.quitAndInstall(); });
 
 ipcMain.handle('choose-folder', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog(settingsWindow, {
