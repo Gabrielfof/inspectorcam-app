@@ -149,6 +149,7 @@ function setupAutoUpdater() {
     console.log('[updater] Descărcare completă:', info.version);
     if (mainWindow) mainWindow.webContents.send('update-downloaded', { version: info.version });
     setTimeout(() => {
+      app.isQuitting = true;
       autoUpdater.quitAndInstall(true, true);
     }, 3000);
   });
