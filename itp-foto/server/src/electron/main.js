@@ -137,10 +137,13 @@ function setupAutoUpdater() {
 
   autoUpdater.on('update-downloaded', info => {
     if (mainWindow) mainWindow.webContents.send('update-downloaded', { version: info.version });
+    // Instalează automat după 5 secunde — fără intervenție utilizator
+    setTimeout(() => {
+      autoUpdater.quitAndInstall(true, true);
+    }, 5000);
   });
 
   autoUpdater.checkForUpdates().catch(() => {});
-  // Re-verifică la fiecare 6 ore
   setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 6 * 60 * 60 * 1_000);
 }
 
