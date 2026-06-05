@@ -1373,24 +1373,22 @@ fetch('https://api.github.com/repos/Gabrielfof/inspectorcam-app/releases/latest'
     const assets = release.assets || [];
     const exe = assets.find(a => a.name.endsWith('.exe'));
     const dmgArm = assets.find(a => a.name.includes('arm64') && a.name.endsWith('.dmg'));
-    const dmgX64 = assets.find(a => a.name.includes('x64') && a.name.endsWith('.dmg'));
-    const dmg = dmgArm || dmgX64 || assets.find(a => a.name.endsWith('.dmg'));
+    // x64 nu are suffix de arhitectură în numele fișierului
+    const dmgX64 = assets.find(a => !a.name.includes('arm64') && !a.name.includes('universal') && a.name.endsWith('.dmg'));
     if (exe) {
       document.getElementById('dl-win').href = exe.browser_download_url;
       document.getElementById('dl-win-label').textContent = `Windows (.exe) — ${v}`;
     }
-    if (dmgArm && dmgX64) {
-      // Ambele arhitecturi disponibile — afișăm două butoane Mac
+    if (dmgArm) {
       document.getElementById('dl-mac').href = dmgArm.browser_download_url;
-      document.getElementById('dl-mac-label').textContent = `macOS Apple Silicon — ${v}`;
+      document.getElementById('dl-mac-label').textContent = `macOS Apple Silicon (M1/M2/M3) — ${v}`;
+    }
+    if (dmgX64) {
       const btnX64 = document.getElementById('dl-mac').cloneNode(true);
       btnX64.id = 'dl-mac-x64';
       btnX64.href = dmgX64.browser_download_url;
       btnX64.querySelector('span').textContent = `macOS Intel — ${v}`;
       document.getElementById('dl-mac').after(btnX64);
-    } else if (dmg) {
-      document.getElementById('dl-mac').href = dmg.browser_download_url;
-      document.getElementById('dl-mac-label').textContent = `macOS (.dmg) — ${v}`;
     }
   })
   .catch(() => {
