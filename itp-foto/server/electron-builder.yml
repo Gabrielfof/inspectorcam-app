@@ -29,7 +29,7 @@ win:
   target:
     - target: nsis
       arch: [x64]
-  icon: "build-resources/icon.icns"
+  icon: "build-resources/icon.ico"
   # Adaugă excepție în Windows Firewall automat
   requestedExecutionLevel: requireAdministrator
 
