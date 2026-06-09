@@ -222,17 +222,14 @@ nav {
 }
 
 .hero-title .line2 {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent);
   filter: drop-shadow(0 0 20px rgba(255,95,31,0.6)) drop-shadow(0 0 40px rgba(255,95,31,0.3));
 }
 
 .hero-sub {
   font-size: clamp(1rem, 2vw, 1.2rem);
   color: var(--muted2);
-  max-width: 560px;
+  max-width: 720px;
   margin: 0 auto 40px;
   line-height: 1.7;
   animation: fadeInUp 0.7s ease 0.2s both;
@@ -578,32 +575,46 @@ section {
   list-style: none;
 }
 
-.compare-item {
+.compare-items li {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   font-size: 0.9rem;
   color: var(--muted2);
   line-height: 1.5;
 }
-
-.compare-item { align-items: center; }
-.compare-item::before {
+.compare-items li::before {
   content: '';
   flex-shrink: 0;
   width: 7px; height: 7px;
   border-radius: 50%;
   display: block;
 }
-.compare-bad .compare-item::before {
+.compare-bad li::before {
   background: #e53e3e;
   box-shadow: 0 0 6px rgba(229,62,62,0.6);
 }
-.compare-good .compare-item::before {
-  background: #FF5F1F;
-  box-shadow: 0 0 10px rgba(255,95,31,0.9), 0 0 20px rgba(255,95,31,0.4);
+.compare-good li::before {
+  display: none;
 }
-.compare-good .compare-item { color: var(--text); }
+.compare-good li {
+  color: var(--text);
+  gap: 12px;
+}
+.compare-good li::after {
+  display: none;
+}
+.compare-good li {
+  position: relative;
+}
+.compare-good li .ck {
+  flex-shrink: 0;
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+.compare-good li .ck svg {
+  filter: drop-shadow(0 0 5px rgba(255,95,31,0.9)) drop-shadow(0 0 10px rgba(255,95,31,0.5));
+}
 
 /* ── Features ── */
 #features { background: var(--bg2); }
@@ -1031,28 +1042,20 @@ footer {
 
   <!-- Floating mechanic icons -->
   <div class="hero-float-icons" aria-hidden="true">
-    <!-- Cheie fixă -->
-    <svg class="hfi hfi-1" width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="rgba(255,95,31,0.55)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 8px rgba(255,95,31,0.4))"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-    <!-- Mașină -->
-    <svg class="hfi hfi-2" width="130" height="80" viewBox="0 0 64 40" fill="none" stroke="rgba(255,95,31,0.45)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 10px rgba(255,95,31,0.35))"><path d="M8 28 L6 20 L16 10 L48 10 L58 20 L56 28 Z"/><circle cx="16" cy="30" r="5"/><circle cx="48" cy="30" r="5"/><path d="M16 10 L20 18 L44 18 L48 10"/><line x1="2" y1="22" x2="8" y2="22"/><line x1="56" y1="22" x2="62" y2="22"/></svg>
-    <!-- Cheie reglabilă -->
-    <svg class="hfi hfi-3" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="rgba(255,95,31,0.5)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 7px rgba(255,95,31,0.38))"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-    <!-- Suspensie / arc -->
-    <svg class="hfi hfi-4" width="56" height="100" viewBox="0 0 32 56" fill="none" stroke="rgba(255,95,31,0.48)" stroke-width="1.4" stroke-linecap="round" style="filter:drop-shadow(0 0 6px rgba(255,95,31,0.35))"><line x1="16" y1="2" x2="16" y2="8"/><path d="M4 8 L28 8 L28 14 L4 14 L4 20 L28 20 L28 26 L4 26 L4 32 L28 32 L28 38 L4 38"/><line x1="16" y1="38" x2="16" y2="54"/><line x1="4" y1="54" x2="28" y2="54"/></svg>
-    <!-- Cheie hex -->
-    <svg class="hfi hfi-5" width="76" height="76" viewBox="0 0 24 24" fill="none" stroke="rgba(255,95,31,0.45)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 8px rgba(255,95,31,0.35))"><polygon points="12 2 19 6 19 18 12 22 5 18 5 6"/><circle cx="12" cy="12" r="3"/></svg>
-    <!-- Cameră foto -->
-    <svg class="hfi hfi-6" width="100" height="84" viewBox="0 0 52 44" fill="none" stroke="rgba(255,95,31,0.55)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 10px rgba(255,95,31,0.42))"><path d="M4 12 L4 36 Q4 40 8 40 L44 40 Q48 40 48 36 L48 12 Q48 8 44 8 L38 8 L34 3 L18 3 L14 8 L8 8 Q4 8 4 12 Z"/><circle cx="26" cy="24" r="8"/><circle cx="26" cy="24" r="4"/><circle cx="40" cy="14" r="2"/></svg>
-    <!-- Număr înmatriculare -->
-    <svg class="hfi hfi-7" width="140" height="56" viewBox="0 0 80 32" fill="none" stroke="rgba(255,95,31,0.5)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 8px rgba(255,95,31,0.38))"><rect x="2" y="2" width="76" height="28" rx="4"/><rect x="6" y="5" width="8" height="22" rx="2" fill="rgba(255,95,31,0.12)"/><text x="18" y="21" font-size="12" font-family="monospace" fill="rgba(255,95,31,0.6)" stroke="none">BV·33·ABG</text></svg>
-    <!-- Șurubelniță -->
-    <svg class="hfi hfi-8" width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="rgba(255,95,31,0.48)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 7px rgba(255,95,31,0.35))"><line x1="12" y1="2" x2="12" y2="15"/><path d="M6 8 Q6 15 12 15 Q18 15 18 8"/><line x1="12" y1="15" x2="12" y2="22"/></svg>
+    <img class="hfi hfi-1" src="icons/key.png" width="140" height="140" alt="" style="filter:drop-shadow(0 0 12px rgba(255,95,31,0.55))">
+    <img class="hfi hfi-2" src="icons/oil.png" width="140" height="140" alt="" style="filter:drop-shadow(0 0 12px rgba(255,95,31,0.55))">
+    <img class="hfi hfi-3" src="icons/rim.png" width="140" height="140" alt="" style="filter:drop-shadow(0 0 12px rgba(255,95,31,0.55))">
+    <img class="hfi hfi-4" src="icons/tire.png" width="140" height="140" alt="" style="filter:drop-shadow(0 0 12px rgba(255,95,31,0.55))">
+    <img class="hfi hfi-5" src="icons/wrenches.png" width="140" height="140" alt="" style="filter:drop-shadow(0 0 12px rgba(255,95,31,0.55))">
+    <img class="hfi hfi-6" src="icons/brake.png" width="140" height="140" alt="" style="filter:drop-shadow(0 0 12px rgba(255,95,31,0.55))">
+    <img class="hfi hfi-7" src="icons/speedometer.png" width="140" height="140" alt="" style="filter:drop-shadow(0 0 12px rgba(255,95,31,0.55))">
+    <img class="hfi hfi-8" src="icons/steering.png" width="140" height="140" alt="" style="filter:drop-shadow(0 0 12px rgba(255,95,31,0.55))">
   </div>
 
   <div class="container" style="position:relative;z-index:1">
     <div class="hero-badge">
       <span class="hero-badge-dot"></span>
-      Nou — versiunea 1.0 disponibilă
+      Nou — versiunea 1.0.9 disponibilă
     </div>
 
     <h1 class="hero-title">
@@ -1061,7 +1064,7 @@ footer {
     </h1>
 
     <p class="hero-sub">
-      Fotografiezi vehiculul de pe telefon, dosarul se creează automat pe calculator. Organizat după dată, număr de înmatriculare, gata de livrat.
+      Fotografiezi vehiculul de pe telefon, dosarul se creează automat pe calculator.<br>Organizat după dată, număr de înmatriculare, gata de livrat.
     </p>
 
     <div class="hero-actions">
@@ -1075,43 +1078,47 @@ footer {
 
     <!-- Phone mockup -->
     <div class="hero-visual">
-      <div class="phone-frame">
-        <div class="phone-screen" id="phone-screen-login" style="padding:20px 14px 14px;gap:0">
+      <div class="phone-frame" style="width:260px;height:480px">
+        <div class="phone-screen" style="padding:22px 16px 16px;gap:0;background:#0d1018">
           <!-- Status bar -->
-          <div class="phone-status" style="margin-bottom:14px">
-            <span>9:41</span><span>●●●</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#888;margin-bottom:18px">
+            <span style="font-weight:600">9:41</span>
+            <div style="display:flex;gap:4px;align-items:center">
+              <svg width="12" height="9" viewBox="0 0 24 18" fill="#888"><rect x="0" y="6" width="4" height="12" rx="1"/><rect x="6" y="4" width="4" height="14" rx="1"/><rect x="12" y="2" width="4" height="16" rx="1"/><rect x="18" y="0" width="4" height="18" rx="1"/></svg>
+              <svg width="13" height="10" viewBox="0 0 24 19" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round"><path d="M2 7 Q12 0 22 7"/><path d="M5 11 Q12 6 19 11"/><path d="M8 15 Q12 12 16 15"/><circle cx="12" cy="18" r="1.5" fill="#888" stroke="none"/></svg>
+              <svg width="22" height="11" viewBox="0 0 44 22"><rect x="0" y="1" width="38" height="20" rx="4" fill="none" stroke="#888" stroke-width="2"/><rect x="38" y="7" width="4" height="8" rx="2" fill="#888"/><rect x="2" y="3" width="22" height="16" rx="2" fill="#888"/></svg>
+            </div>
           </div>
           <!-- Brand -->
-          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:14px">
-            <img src="icon.png" alt="" style="width:36px;height:36px;border-radius:10px;box-shadow:0 0 12px rgba(255,95,31,0.4)">
-            <div style="font-weight:800;font-size:0.9rem;letter-spacing:-0.01em;color:#EDF2F7">InspectorCam</div>
-            <div style="font-size:0.65rem;color:#64748b">Stație ITP Demo</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;margin-bottom:18px">
+            <img src="icon.png" alt="" style="width:56px;height:56px;border-radius:14px;box-shadow:0 0 18px rgba(255,95,31,0.5)">
+            <div style="font-weight:800;font-size:1.05rem;letter-spacing:-0.01em;color:#EDF2F7">InspectorCam</div>
+            <div style="font-size:0.6rem;color:#FF5F1F;text-transform:uppercase;letter-spacing:0.12em;font-weight:600">Statie ITP Demo</div>
           </div>
-          <!-- Date + badge -->
-          <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:7px 10px;margin-bottom:12px">
-            <div>
-              <div style="font-size:0.62rem;color:#64748b">Joi, 5 Iunie 2026</div>
-              <div style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,95,31,0.12);border:1px solid rgba(255,95,31,0.25);border-radius:12px;padding:2px 7px;margin-top:3px">
-                <span style="width:5px;height:5px;border-radius:50%;background:#FF5F1F;display:inline-block"></span>
-                <span style="font-size:0.6rem;color:#FF8C55;font-weight:700" id="demo-badge">7 inspecții azi</span>
+          <!-- Date + time card -->
+          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:8px 11px;margin-bottom:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div style="font-size:0.6rem;color:#94a3b8;margin-bottom:4px">Sâmbătă, 6 Iunie 2026</div>
+                <div style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,95,31,0.15);border:1px solid rgba(255,95,31,0.3);border-radius:20px;padding:2px 7px">
+                  <span style="width:5px;height:5px;border-radius:50%;background:#FF5F1F;display:inline-block"></span>
+                  <span style="font-size:0.58rem;color:#FF8C55;font-weight:700">0 inspecții azi</span>
+                </div>
               </div>
+              <div style="font-size:1.15rem;font-weight:800;color:#EDF2F7;line-height:1">09:41</div>
             </div>
-            <div style="font-size:1.1rem;font-weight:800;color:#EDF2F7" id="demo-clock">09:41</div>
           </div>
-          <!-- Inspector list -->
-          <div style="font-size:0.6rem;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px">Selectați inspectorul</div>
-          <div style="display:flex;flex-direction:column;gap:5px">
-            <div class="phone-insp active-insp">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FF8C55" stroke-width="2.5" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          <!-- Inspector label -->
+          <div style="font-size:0.58rem;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:8px">Selectați inspectorul</div>
+          <!-- Inspector rows -->
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div class="phone-insp" style="padding:11px 13px;border-radius:10px;font-size:0.78rem;font-weight:700;color:#EDF2F7;gap:10px">
+              <img src="icons/flag-real.png" width="28" height="18" style="filter:invert(1);opacity:0.85">
               Ion Popescu
             </div>
-            <div class="phone-insp">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-              Mihai Ionescu
-            </div>
-            <div class="phone-insp">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-              Andrei Marin
+            <div class="phone-insp" style="padding:11px 13px;border-radius:10px;font-size:0.78rem;font-weight:700;color:#EDF2F7;gap:10px">
+              <img src="icons/flag-real.png" width="28" height="18" style="filter:invert(1);opacity:0.85">
+              Maria Ionescu
             </div>
           </div>
         </div>
@@ -1171,12 +1178,12 @@ footer {
           Cu InspectorCam
         </div>
         <ul class="compare-items compare-good">
-          <li>Dosarul se creează automat la fiecare vehicul</li>
-          <li>Organizat după an / lună / zi / număr înmatriculare</li>
-          <li>Dashboard cu toate inspecțiile zilei, în timp real</li>
-          <li>Căutare instantă după număr de înmatriculare</li>
-          <li>Orice telefon, acces instant prin WiFi</li>
-          <li>Zero configurare — instalezi și pornești</li>
+          <li><span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Dosarul se creează automat la fiecare vehicul</li>
+          <li><span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Organizat după an / lună / zi / număr înmatriculare</li>
+          <li><span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Dashboard cu toate inspecțiile zilei, în timp real</li>
+          <li><span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Căutare instantă după număr de înmatriculare</li>
+          <li><span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Orice telefon, acces instant prin WiFi</li>
+          <li><span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF5F1F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>Zero configurare — instalezi și pornești</li>
         </ul>
       </div>
     </div>
@@ -1329,30 +1336,115 @@ footer {
   </div>
 </section>
 
-<!-- Download temporar testare -->
-<section style="background:#0d1018;border-top:1px dashed rgba(255,95,31,0.2);border-bottom:1px dashed rgba(255,95,31,0.2);padding:40px">
-  <div style="max-width:600px;margin:0 auto;text-align:center">
-    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,190,11,0.1);border:1px solid rgba(255,190,11,0.25);border-radius:20px;padding:4px 14px;font-size:0.75rem;font-weight:700;color:#FFBE0B;margin-bottom:16px;letter-spacing:0.05em;text-transform:uppercase">
-      ⚠ Temporar — Varianta de testare
-    </div>
-    <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:8px;color:#EDF2F7">Descarcă pentru testare</h3>
-    <p style="font-size:0.85rem;color:#64748b;margin-bottom:24px">Aceste linkuri sunt temporare și vor fi eliminate după finalizarea testelor.</p>
-    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap" id="dl-buttons">
-      <a id="dl-mac" href="#"
-         style="display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 22px;color:#EDF2F7;text-decoration:none;font-size:0.9rem;font-weight:600;transition:all 0.2s"
-         onmouseover="this.style.borderColor='rgba(255,95,31,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.12)'">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span id="dl-mac-label">macOS (.dmg)</span>
+<!-- Download -->
+<section id="download" class="reveal" style="background:#0d1018;padding:100px 40px;text-align:center;position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 100%,rgba(255,95,31,0.07) 0%,transparent 70%);pointer-events:none"></div>
+  <div style="max-width:700px;margin:0 auto;position:relative">
+    <div class="section-label">Disponibil acum</div>
+    <h2 class="section-title">Descarcă <span class="og">InspectorCam</span></h2>
+    <p class="section-sub" style="margin-bottom:48px">Instalează gratuit pe Windows sau macOS. Activarea se face cu licența primită după abonare.</p>
+
+    <div id="dl-buttons" style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;align-items:stretch">
+      <!-- Butoanele sunt generate de JS -->
+      <a id="dl-mac" href="#" class="dl-btn" data-os="mac">
+        <div class="dl-btn-corner tl"></div>
+        <div class="dl-btn-corner tr"></div>
+        <div class="dl-btn-corner bl"></div>
+        <div class="dl-btn-corner br"></div>
+        <div class="dl-btn-inner">
+          <svg class="dl-os-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          <div class="dl-btn-text">
+            <span class="dl-btn-os">macOS</span>
+            <span id="dl-mac-label" class="dl-btn-sub">Se încarcă…</span>
+          </div>
+          <svg class="dl-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </div>
       </a>
-      <a id="dl-win" href="#"
-         style="display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 22px;color:#EDF2F7;text-decoration:none;font-size:0.9rem;font-weight:600;transition:all 0.2s"
-         onmouseover="this.style.borderColor='rgba(255,95,31,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.12)'">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span id="dl-win-label">Windows (.exe)</span>
+      <a id="dl-win" href="#" class="dl-btn" data-os="win">
+        <div class="dl-btn-corner tl"></div>
+        <div class="dl-btn-corner tr"></div>
+        <div class="dl-btn-corner bl"></div>
+        <div class="dl-btn-corner br"></div>
+        <div class="dl-btn-inner">
+          <svg class="dl-os-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 12V6.75l6-1.32v6.57L3 12m17-9v8.75l-10 .15V5.21L20 3M3 13l6 .09v6.81l-6-1.15V13m17 .25V22l-10-1.91V13.1L20 13.25z"/></svg>
+          <div class="dl-btn-text">
+            <span class="dl-btn-os">Windows</span>
+            <span id="dl-win-label" class="dl-btn-sub">Se încarcă…</span>
+          </div>
+          <svg class="dl-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </div>
       </a>
     </div>
+
+    <p style="margin-top:28px;font-size:0.8rem;color:rgba(255,255,255,0.25)">Windows 10/11 și macOS 11+ · Actualizări automate incluse</p>
   </div>
 </section>
+
+<style>
+.dl-btn {
+  position: relative;
+  display: inline-flex;
+  text-decoration: none;
+  min-width: 220px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.03);
+  transition: background 0.3s;
+}
+.dl-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  padding: 1.5px;
+  background: linear-gradient(135deg, rgba(255,95,31,0.6), rgba(255,95,31,0.1) 50%, rgba(255,95,31,0.6));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+  background-size: 200% 200%;
+  background-position: 0% 0%;
+}
+.dl-btn:hover::before {
+  opacity: 1;
+  animation: borderFlow 1.5s linear infinite;
+}
+.dl-btn:hover {
+  background: rgba(255,95,31,0.06);
+}
+@keyframes borderFlow {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 200% 200%; }
+}
+.dl-btn-corner {
+  position: absolute;
+  width: 8px; height: 8px;
+  border-color: #FF5F1F;
+  border-style: solid;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 2;
+}
+.dl-btn-corner.tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; border-radius: 3px 0 0 0; transform: translate(4px,4px); }
+.dl-btn-corner.tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; border-radius: 0 3px 0 0; transform: translate(-4px,4px); }
+.dl-btn-corner.bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; border-radius: 0 0 0 3px; transform: translate(4px,-4px); }
+.dl-btn-corner.br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; border-radius: 0 0 3px 0; transform: translate(-4px,-4px); }
+.dl-btn:hover .dl-btn-corner { opacity: 1; transform: translate(0,0); }
+.dl-btn-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 28px;
+  width: 100%;
+}
+.dl-os-icon { width: 28px; height: 28px; color: #FF5F1F; flex-shrink: 0; }
+.dl-btn-text { display: flex; flex-direction: column; align-items: flex-start; flex: 1; }
+.dl-btn-os { font-size: 1rem; font-weight: 700; color: #EDF2F7; line-height: 1.2; }
+.dl-btn-sub { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.dl-arrow { width: 18px; height: 18px; color: rgba(255,95,31,0.6); flex-shrink: 0; transition: transform 0.3s, color 0.3s; }
+.dl-btn:hover .dl-arrow { transform: translateY(3px); color: #FF5F1F; }
+</style>
 
 <!-- Footer -->
 <footer>
@@ -1381,13 +1473,13 @@ fetch('https://api.github.com/repos/Gabrielfof/inspectorcam-app/releases/latest'
     }
     if (dmgArm) {
       document.getElementById('dl-mac').href = dmgArm.browser_download_url;
-      document.getElementById('dl-mac-label').textContent = `macOS Apple Silicon (M1/M2/M3) — ${v}`;
+      document.getElementById('dl-mac-label').textContent = `Apple Silicon (M1/M2/M3) — ${v}`;
     }
     if (dmgX64) {
       const btnX64 = document.getElementById('dl-mac').cloneNode(true);
       btnX64.id = 'dl-mac-x64';
       btnX64.href = dmgX64.browser_download_url;
-      btnX64.querySelector('span').textContent = `macOS Intel — ${v}`;
+      btnX64.querySelector('.dl-btn-sub').textContent = `Intel (x64) — ${v}`;
       document.getElementById('dl-mac').after(btnX64);
     }
   })

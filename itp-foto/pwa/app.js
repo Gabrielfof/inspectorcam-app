@@ -54,6 +54,14 @@ const App = (() => {
       if (saved) state.inspector = JSON.parse(saved);
     } catch { /* ignore */ }
 
+    // F2: Restore active plates (supraviețuiesc sleep/reload)
+    try {
+      const savedPlates = await Storage.getActivePlates();
+      for (const insp of savedPlates) {
+        state.activePlates.set(insp.plate, insp);
+      }
+    } catch { /* ignore */ }
+
     try {
       [state.config, state.inspectors] = await Promise.all([
         Sync.fetchConfig(),
@@ -201,6 +209,7 @@ const App = (() => {
     Camera.stop();
     cameraRunning = false;
     cameraMode = 'none';
+    Storage.clearActivePlates().catch(() => {});
     showLogin();
   }
 
@@ -273,12 +282,16 @@ const App = (() => {
       const badge = insp.status === 'pending'
         ? '<span class="sync-badge pending">local</span>'
         : '<span class="sync-badge synced">ok</span>';
+      // F3: buton "Adaugă poze" pentru orice inspecție finalizată azi
+      const addBtn = insp.status === 'synced'
+        ? `<button class="btn-add-more" onclick="App.reopenForMorePhotos('${escHtml(insp.plate)}')">+ Poze</button>`
+        : '';
       return `
         <div class="inspection-item">
           <span class="inspection-plate">${escHtml(insp.plate)}</span>
           <span class="inspection-time">${time}</span>
           <span class="inspection-inspector">${escHtml(insp.inspector_name || '')}</span>
-          ${badge}
+          ${badge}${addBtn}
         </div>`;
     }).join('');
   }
@@ -401,6 +414,51 @@ const App = (() => {
         await ensureCameraRunning();
       }
     }
+
+    // F1: actualizează strip-ul cu pozele deja făcute
+    renderPhotoStrip();
+  }
+
+  /* F1: Strip minimal cu pozele deja făcute (apare jos în cameră) */
+  function renderPhotoStrip() {
+    const insp = currentInspection();
+    if (!insp) return;
+    const strip = document.getElementById('photo-strip');
+    if (!strip) return;
+
+    if (insp.photos.length === 0) {
+      strip.classList.add('hidden');
+      return;
+    }
+
+    strip.classList.remove('hidden');
+
+    // Eliberăm object URL-uri vechi
+    strip.querySelectorAll('img').forEach(img => {
+      if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+    });
+    strip.innerHTML = '';
+
+    insp.activeSteps.forEach((step, idx) => {
+      const photo = insp.photos.find(p => p.step === step.id);
+      const thumb = document.createElement('div');
+      thumb.className = 'strip-thumb' +
+        (idx === insp.currentStep ? ' strip-active' : '') +
+        (photo ? '' : ' strip-empty');
+
+      if (photo) {
+        const url = URL.createObjectURL(photo.blob);
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = step.label;
+        thumb.appendChild(img);
+        thumb.addEventListener('click', () => { if (idx !== insp.currentStep) startStep(idx); });
+      } else {
+        thumb.textContent = String(idx + 1);
+      }
+
+      strip.appendChild(thumb);
+    });
   }
 
   function showStepInstruction(index, total, label) {
@@ -520,6 +578,9 @@ const App = (() => {
     } else {
       insp.photos.push(photo);
     }
+
+    // F2: persistăm în IndexedDB după fiecare poză (supraviețuiește sleep)
+    Storage.saveActivePlate(insp).catch(() => {});
   }
 
   /* ---- note modal ---- */
@@ -700,12 +761,14 @@ const App = (() => {
 
     try {
       const result = await Sync.uploadInspection(payload);
+      Storage.deleteActivePlate(insp.id).catch(() => {});
       state.activePlates.delete(plateKey);
       state.currentPlate = null;
       showSuccess(result.inspection, false);
     } catch {
       try {
         await Storage.savePending(payload);
+        Storage.deleteActivePlate(insp.id).catch(() => {});
         state.activePlates.delete(plateKey);
         state.currentPlate = null;
         showSuccess({ plate: payload.plate, photos_saved: payload.photos.length }, true);
@@ -736,7 +799,37 @@ const App = (() => {
       document.getElementById('success-folder').textContent   = inspection.folder_path || '—';
     }
 
+    // F3: buton "Adaugă poze" — vizibil doar când nu e offline
+    const addMoreBtn = document.getElementById('success-add-more');
+    if (addMoreBtn) {
+      addMoreBtn.dataset.plate = inspection.plate || '';
+      addMoreBtn.style.display = isOffline ? 'none' : '';
+    }
+
     show('screen-success');
+  }
+
+  /* F3: Redeschide o inspecție finalizată pentru a adăuga poze suplimentare */
+  function reopenForMorePhotos(plate) {
+    if (!plate) return;
+
+    if (state.activePlates.has(plate)) {
+      // Cazul e deja activ — pur și simplu continuăm
+      resumePlate(plate);
+      return;
+    }
+
+    // Creăm un caz nou cu aceeași placă (pozele noi vor fi trimise separat)
+    state.activePlates.set(plate, {
+      id:          generateId(),
+      plate:       plate,
+      notes:       '',
+      photos:      [],
+      currentStep: 0,
+      activeSteps: getActiveSteps(),
+    });
+    state.currentPlate = plate;
+    startStep(0);
   }
 
   /* ============================================================
@@ -876,6 +969,7 @@ const App = (() => {
     finalizeEarly,
     startCapture,
     formatPlateInput,
+    reopenForMorePhotos,
   };
 })();
 

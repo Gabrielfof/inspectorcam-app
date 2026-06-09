@@ -452,7 +452,7 @@ html, body {
   padding: 14px 16px;
   display: grid;
   grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto auto auto;
   gap: 4px 12px;
   align-items: center;
 }
@@ -485,6 +485,23 @@ html, body {
 }
 .sync-badge.synced { background: rgba(0,217,126,0.15); color: var(--success); }
 .sync-badge.pending { background: rgba(255,190,11,0.15); color: var(--warning); }
+
+/* F3: buton "Adaugă poze" în lista azi */
+.btn-add-more {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding: 6px 12px;
+  background: rgba(255,95,31,0.1);
+  border: 1px solid rgba(255,95,31,0.3);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s;
+}
+.btn-add-more:active { background: rgba(255,95,31,0.2); }
 
 .no-inspections {
   color: var(--text-muted);
@@ -741,6 +758,56 @@ html, body {
 }
 
 /* Camera bottom controls */
+/* F1: Strip cu miniaturi poze deja făcute */
+.photo-strip {
+  position: fixed;
+  bottom: calc(var(--safe-bot) + 100px);
+  left: 0;
+  right: 0;
+  z-index: 11;
+  display: flex;
+  gap: 6px;
+  padding: 6px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%);
+}
+.photo-strip::-webkit-scrollbar { display: none; }
+.photo-strip.hidden { display: none; }
+
+.strip-thumb {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.strip-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.strip-thumb.strip-active {
+  border-color: var(--accent);
+  transform: scale(1.12);
+  box-shadow: 0 0 8px rgba(255,95,31,0.6);
+}
+.strip-thumb.strip-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.3);
+  cursor: default;
+  border-style: dashed;
+}
+
 .camera-bottom {
   position: fixed;
   bottom: 0;

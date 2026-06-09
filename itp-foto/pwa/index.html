@@ -142,6 +142,9 @@
     </button>
   </div>
 
+  <!-- F1: Strip minimal cu pozele deja făcute -->
+  <div id="photo-strip" class="photo-strip hidden"></div>
+
   <!-- Capture controls (shown while in live camera mode) -->
   <div class="camera-bottom" id="capture-controls">
     <button class="btn-import-gallery" onclick="App.importFromGallery()" title="Import din galerie">Galerie</button>
@@ -228,6 +231,11 @@
 
   <div class="success-actions">
     <button class="btn-primary" onclick="App.startNewInspection()">Inspecție nouă</button>
+    <!-- F3: Adaugă poze suplimentare la același caz -->
+    <button id="success-add-more" class="btn-secondary" style="display:none"
+      onclick="App.reopenForMorePhotos(this.dataset.plate)">
+      + Adaugă poze
+    </button>
     <button class="btn-secondary" onclick="App.goHome()">← Înapoi acasă</button>
   </div>
 </div>
