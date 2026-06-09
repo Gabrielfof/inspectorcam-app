@@ -433,10 +433,6 @@ const App = (() => {
 
     strip.classList.remove('hidden');
 
-    // Eliberăm object URL-uri vechi
-    strip.querySelectorAll('img').forEach(img => {
-      if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
-    });
     strip.innerHTML = '';
 
     insp.activeSteps.forEach((step, idx) => {
@@ -447,9 +443,8 @@ const App = (() => {
         (photo ? '' : ' strip-empty');
 
       if (photo) {
-        const url = URL.createObjectURL(photo.blob);
         const img = document.createElement('img');
-        img.src = url;
+        img.src = photo.dataUrl || URL.createObjectURL(photo.blob);
         img.alt = step.label;
         thumb.appendChild(img);
         thumb.addEventListener('click', () => { if (idx !== insp.currentStep) startStep(idx); });
@@ -561,12 +556,23 @@ const App = (() => {
     };
   }
 
-  function savePhoto(data) {
+  function blobToDataUrl(blob) {
+    return new Promise(resolve => {
+      const r = new FileReader();
+      r.onload  = e => resolve(e.target.result);
+      r.onerror = () => resolve(null);
+      r.readAsDataURL(blob);
+    });
+  }
+
+  async function savePhoto(data) {
     const insp = currentInspection();
+    const dataUrl = await blobToDataUrl(data.blob);
     const photo = {
       step:      data.step,
       blob:      data.blob,
       baseBlob:  data.blob,
+      dataUrl,           // URL stabil — nu dispare după sleep iOS
       source:    data.source,
       note:      '',
       timestamp: new Date().toISOString(),
@@ -711,15 +717,20 @@ const App = (() => {
     grid.innerHTML = '';
 
     insp.photos.forEach(photo => {
-      const url = URL.createObjectURL(photo.blob);
+      const stepIdx = insp.activeSteps.findIndex(s => s.id === photo.step);
+      const label = stepIdx >= 0 ? `Etapa ${stepIdx + 1}` : photo.step;
+      const url = photo.dataUrl || URL.createObjectURL(photo.blob);
       const div = document.createElement('div');
       div.className = 'photo-thumb';
       div.innerHTML = `
-        <img src="${url}" alt="${escHtml(photo.step)}">
-        <span class="photo-thumb-label">${escHtml(photo.step)}</span>
+        <img src="${url}" alt="${escHtml(label)}">
+        <span class="photo-thumb-label">${escHtml(label)}</span>
       `;
       grid.appendChild(div);
     });
+
+    const countEl = document.querySelector('#screen-confirm .form-label');
+    if (countEl) countEl.textContent = `Fotografii (${insp.photos.length})`;
 
     show('screen-confirm');
   }

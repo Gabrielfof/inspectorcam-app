@@ -778,8 +778,8 @@ html, body {
 
 .strip-thumb {
   flex-shrink: 0;
-  width: 62px;
-  height: 62px;
+  width: 80px;
+  height: 80px;
   border-radius: 10px;
   overflow: hidden;
   border: 2px solid rgba(255,255,255,0.2);

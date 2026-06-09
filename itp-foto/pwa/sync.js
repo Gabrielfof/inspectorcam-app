@@ -53,11 +53,12 @@ const Sync = (() => {
     }));
     fd.append('photos_meta', JSON.stringify(meta));
 
-    inspection.photos.forEach(p => fd.append('files', p.blob, `${p.step}.jpg`));
+    inspection.photos
+      .filter(p => p.blob instanceof Blob && p.blob.size > 0)
+      .forEach(p => fd.append('files', p.blob, `${p.step}.jpg`));
 
-    // Timeout 45s — dacă serverul nu răspunde, aruncăm eroare și salvăm local
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 45_000);
+    const timer = setTimeout(() => controller.abort(), 15_000);
     try {
       return await api('/api/inspections', { method: 'POST', body: fd, signal: controller.signal });
     } finally {
