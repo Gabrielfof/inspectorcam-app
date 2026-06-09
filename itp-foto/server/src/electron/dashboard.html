@@ -241,6 +241,51 @@
   .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
   .empty-state p { font-size: 14px; }
 
+  /* ── Update overlay modal ── */
+  #update-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0,0,0,0.82);
+    align-items: center;
+    justify-content: center;
+  }
+  #update-overlay.show { display: flex; }
+  .update-modal {
+    background: #1a1a1a;
+    border: 1px solid rgba(0,217,126,0.35);
+    border-radius: 16px;
+    padding: 40px 48px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(0,217,126,0.12);
+  }
+  .update-modal-icon { font-size: 48px; margin-bottom: 16px; }
+  .update-modal-title { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .update-modal-sub { font-size: 14px; color: #aaa; margin-bottom: 24px; line-height: 1.5; }
+  .update-modal-countdown {
+    font-size: 13px;
+    color: var(--success);
+    margin-bottom: 24px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .update-modal-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 14px 36px;
+    cursor: pointer;
+    width: 100%;
+    transition: opacity 0.15s;
+  }
+  .update-modal-btn:hover { opacity: 0.85; }
+
   /* footer */
   .footer {
     padding: 10px 24px;
@@ -268,6 +313,20 @@
   <span class="notif-msg" id="bar-ready-msg">Actualizare descărcată. Se instalează la închidere.</span>
   <button class="notif-btn" onclick="installUpdate()">Instalează acum</button>
   <button class="notif-dismiss" onclick="this.closest('.notif-bar').classList.remove('show')">✕</button>
+</div>
+
+<!-- ── Update overlay (preia ecranul când actualizarea e gata) ── -->
+<div id="update-overlay">
+  <div class="update-modal">
+    <div class="update-modal-icon">🔄</div>
+    <div class="update-modal-title">Actualizare gata!</div>
+    <div class="update-modal-sub" id="update-modal-sub">
+      Versiunea <strong id="update-modal-version">—</strong> a fost descărcată.<br>
+      Aplicația va reporni automat în câteva secunde.
+    </div>
+    <div class="update-modal-countdown" id="update-modal-countdown">Se repornește în 8 secunde…</div>
+    <button class="update-modal-btn" onclick="installNow()">Repornește acum →</button>
+  </div>
 </div>
 
 <div style="display:flex;flex:1;overflow:hidden">
@@ -472,7 +531,7 @@ function openInspectors() { ipcRenderer.send('open-settings', 'tab-inspectors');
 function openSettings()   { ipcRenderer.send('open-settings'); }
 function openFolder()     { ipcRenderer.send('open-itp-folder'); }
 function quitApp()        { ipcRenderer.send('quit-app'); }
-async function installUpdate() { await ipcRenderer.invoke('install-update'); }
+async function installUpdate() { installNow(); }
 
 // Filter on change
 document.getElementById('filter-date').addEventListener('change', loadInspections);
@@ -501,11 +560,35 @@ ipcRenderer.on('update-available', (_, info) => {
   document.getElementById('bar-update-available').classList.add('show');
 });
 
+let updateCountdownInterval = null;
+
+function installNow() {
+  const btn = document.querySelector('.update-modal-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Se repornește…'; }
+  if (updateCountdownInterval) clearInterval(updateCountdownInterval);
+  ipcRenderer.invoke('install-update');
+}
+
 ipcRenderer.on('update-downloaded', (_, info) => {
   document.getElementById('bar-update-available').classList.remove('show');
-  document.getElementById('bar-ready-msg').textContent = `Actualizare v${info.version} descărcată. Se instalează la închidere.`;
-  document.getElementById('bar-update-ready').style.display = 'flex';
-  document.getElementById('bar-update-ready').classList.add('show');
+  // Ascunde bara mică și arată dialogul mare
+  document.getElementById('bar-update-ready').style.display = 'none';
+  document.getElementById('update-modal-version').textContent = `v${info.version}`;
+  document.getElementById('update-overlay').classList.add('show');
+
+  // Countdown 8 → 0
+  let seconds = 8;
+  const countdownEl = document.getElementById('update-modal-countdown');
+  if (updateCountdownInterval) clearInterval(updateCountdownInterval);
+  updateCountdownInterval = setInterval(() => {
+    seconds--;
+    if (seconds > 0) {
+      countdownEl.textContent = `Se repornește în ${seconds} ${seconds === 1 ? 'secundă' : 'secunde'}…`;
+    } else {
+      countdownEl.textContent = 'Se repornește…';
+      clearInterval(updateCountdownInterval);
+    }
+  }, 1000);
 });
 
 // ── App version ──

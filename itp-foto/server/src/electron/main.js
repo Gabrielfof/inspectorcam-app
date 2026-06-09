@@ -6,6 +6,7 @@ const os    = require('os');
 const fs    = require('fs');
 const https = require('https');
 let autoUpdater = null;
+let pendingUpdateFile = null;
 
 app.setName('InspectorCam');
 
@@ -147,11 +148,30 @@ function setupAutoUpdater() {
 
   autoUpdater.on('update-downloaded', info => {
     console.log('[updater] Descărcare completă:', info.version);
+    pendingUpdateFile = info.downloadedFile || null;
     if (mainWindow) mainWindow.webContents.send('update-downloaded', { version: info.version });
+
+    // Mac: elimină xattr quarantine din directorul de download pentru a evita blocarea Gatekeeper
+    if (process.platform === 'darwin' && pendingUpdateFile) {
+      try {
+        const { execSync } = require('child_process');
+        execSync(`xattr -rd com.apple.quarantine "${path.dirname(pendingUpdateFile)}" 2>/dev/null || true`, { timeout: 5000 });
+        console.log('[updater] xattr quarantine eliminat din:', path.dirname(pendingUpdateFile));
+      } catch (e) {
+        console.log('[updater] xattr cleanup (non-fatal):', e.message);
+      }
+    }
+
+    // Instalare automată după 8 secunde (utilizatorul vede dialogul)
     setTimeout(() => {
       app.isQuitting = true;
-      autoUpdater.quitAndInstall(true, true);
-    }, 3000);
+      try {
+        autoUpdater.quitAndInstall(true, true);
+      } catch (e) {
+        console.error('[updater] quitAndInstall eșuat:', e.message);
+        app.quit();
+      }
+    }, 8000);
   });
 
   autoUpdater.checkForUpdates().catch(err => console.error('[updater] checkForUpdates:', err.message));
@@ -309,7 +329,27 @@ async function quit() {
 ipcMain.handle('get-server-info', () => serverInfo);
 ipcMain.handle('get-app-version', () => app.getVersion());
 ipcMain.handle('get-license-info', () => licenseInfo);
-ipcMain.handle('install-update', () => { if (autoUpdater) { app.isQuitting = true; autoUpdater.quitAndInstall(true, true); } });
+ipcMain.handle('install-update', () => {
+  if (!autoUpdater) return;
+  if (process.platform === 'darwin') {
+    try {
+      const { execSync } = require('child_process');
+      if (pendingUpdateFile) {
+        execSync(`xattr -rd com.apple.quarantine "${path.dirname(pendingUpdateFile)}" 2>/dev/null || true`, { timeout: 5000 });
+      }
+      // Elimină și din bundle-ul curent (ajută la relanasare)
+      const appPath = path.dirname(path.dirname(path.dirname(app.getPath('exe'))));
+      execSync(`xattr -rd com.apple.quarantine "${appPath}" 2>/dev/null || true`, { timeout: 5000 });
+    } catch {}
+  }
+  app.isQuitting = true;
+  try {
+    autoUpdater.quitAndInstall(true, true);
+  } catch (e) {
+    console.error('[updater] manual install error:', e.message);
+    app.quit();
+  }
+});
 
 ipcMain.handle('choose-folder', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog(settingsWindow, {
