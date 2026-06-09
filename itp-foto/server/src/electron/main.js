@@ -128,6 +128,70 @@ async function startMainApp() {
   }
 }
 
+// Pe Mac lansează un shell script care înlocuiește .app DUPĂ ce procesul curent se închide.
+// Ocolim complet quitAndInstall (care eșuează silențios pe Mac fără code signing).
+function launchMacUpdateScript(zipPath, appBundle) {
+  if (!zipPath || !appBundle) return false;
+  const { spawn } = require('child_process');
+  const scriptPath = path.join(os.tmpdir(), 'inspectorcam_update.sh');
+  const script = [
+    '#!/bin/bash',
+    // Asteapta sa se inchida procesul curent (max 30 secunde)
+    'for i in $(seq 1 30); do',
+    '  pgrep -x "InspectorCam" > /dev/null || break',
+    '  sleep 1',
+    'done',
+    `ZIPPATH="${zipPath}"`,
+    `APPBUNDLE="${appBundle}"`,
+    '[ -f "$ZIPPATH" ] || exit 1',
+    '[ -d "$APPBUNDLE" ] || exit 1',
+    // Extrage zip
+    'TMPDIR_EXTRACT=$(mktemp -d)',
+    'unzip -q "$ZIPPATH" -d "$TMPDIR_EXTRACT" 2>/dev/null || exit 1',
+    // Gaseste .app extras
+    'NEWAPP=$(find "$TMPDIR_EXTRACT" -maxdepth 3 -name "*.app" | head -1)',
+    '[ -n "$NEWAPP" ] || exit 1',
+    // Inlocuieste bundle-ul curent
+    'rm -rf "$APPBUNDLE"',
+    'cp -R "$NEWAPP" "$APPBUNDLE"',
+    // Elimina Gatekeeper quarantine (esential pe Mac fara code signing)
+    'xattr -rd com.apple.quarantine "$APPBUNDLE" 2>/dev/null || true',
+    // Curata tmp
+    'rm -rf "$TMPDIR_EXTRACT"',
+    // Porneste noua versiune
+    'open "$APPBUNDLE"',
+  ].join('\n');
+
+  try {
+    fs.writeFileSync(scriptPath, script, { mode: 0o755 });
+    const child = spawn('bash', [scriptPath], { detached: true, stdio: 'ignore' });
+    child.unref();
+    console.log('[updater] Script update Mac lansat:', scriptPath);
+    return true;
+  } catch (e) {
+    console.error('[updater] launchMacUpdateScript error:', e.message);
+    return false;
+  }
+}
+
+function triggerInstall() {
+  app.isQuitting = true;
+
+  if (process.platform === 'darwin') {
+    const appBundle = path.dirname(path.dirname(path.dirname(app.getPath('exe'))));
+    launchMacUpdateScript(pendingUpdateFile, appBundle);
+    // Force-close procesul curent dupa 2 secunde, indiferent de orice
+    setTimeout(() => app.exit(0), 2000);
+  } else {
+    try {
+      autoUpdater.quitAndInstall(true, true);
+    } catch (e) {
+      console.error('[updater] quitAndInstall error:', e.message);
+      app.quit();
+    }
+  }
+}
+
 function setupAutoUpdater() {
   autoUpdater = require('electron-updater').autoUpdater;
   autoUpdater.autoDownload = true;
@@ -149,29 +213,10 @@ function setupAutoUpdater() {
   autoUpdater.on('update-downloaded', info => {
     console.log('[updater] Descărcare completă:', info.version);
     pendingUpdateFile = info.downloadedFile || null;
+    console.log('[updater] Fișier descărcat:', pendingUpdateFile);
     if (mainWindow) mainWindow.webContents.send('update-downloaded', { version: info.version });
-
-    // Mac: elimină xattr quarantine din directorul de download pentru a evita blocarea Gatekeeper
-    if (process.platform === 'darwin' && pendingUpdateFile) {
-      try {
-        const { execSync } = require('child_process');
-        execSync(`xattr -rd com.apple.quarantine "${path.dirname(pendingUpdateFile)}" 2>/dev/null || true`, { timeout: 5000 });
-        console.log('[updater] xattr quarantine eliminat din:', path.dirname(pendingUpdateFile));
-      } catch (e) {
-        console.log('[updater] xattr cleanup (non-fatal):', e.message);
-      }
-    }
-
-    // Instalare automată după 8 secunde (utilizatorul vede dialogul)
-    setTimeout(() => {
-      app.isQuitting = true;
-      try {
-        autoUpdater.quitAndInstall(true, true);
-      } catch (e) {
-        console.error('[updater] quitAndInstall eșuat:', e.message);
-        app.quit();
-      }
-    }, 8000);
+    // Instalare automată după 8 secunde
+    setTimeout(triggerInstall, 8000);
   });
 
   autoUpdater.checkForUpdates().catch(err => console.error('[updater] checkForUpdates:', err.message));
@@ -331,24 +376,7 @@ ipcMain.handle('get-app-version', () => app.getVersion());
 ipcMain.handle('get-license-info', () => licenseInfo);
 ipcMain.handle('install-update', () => {
   if (!autoUpdater) return;
-  if (process.platform === 'darwin') {
-    try {
-      const { execSync } = require('child_process');
-      if (pendingUpdateFile) {
-        execSync(`xattr -rd com.apple.quarantine "${path.dirname(pendingUpdateFile)}" 2>/dev/null || true`, { timeout: 5000 });
-      }
-      // Elimină și din bundle-ul curent (ajută la relanasare)
-      const appPath = path.dirname(path.dirname(path.dirname(app.getPath('exe'))));
-      execSync(`xattr -rd com.apple.quarantine "${appPath}" 2>/dev/null || true`, { timeout: 5000 });
-    } catch {}
-  }
-  app.isQuitting = true;
-  try {
-    autoUpdater.quitAndInstall(true, true);
-  } catch (e) {
-    console.error('[updater] manual install error:', e.message);
-    app.quit();
-  }
+  triggerInstall();
 });
 
 ipcMain.handle('choose-folder', async () => {
