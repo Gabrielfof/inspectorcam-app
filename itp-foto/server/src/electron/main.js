@@ -234,7 +234,13 @@ app.on('window-all-closed', e => {
 
 app.on('before-quit', async () => {
   app.isQuitting = true;
-  if (stopServer) await stopServer().catch(() => {});
+  if (stopServer) {
+    // Timeout 2s: nu permite serverului sa blocheze inchiderea aplicatiei
+    await Promise.race([
+      stopServer().catch(() => {}),
+      new Promise(r => setTimeout(r, 2000)),
+    ]);
+  }
 });
 
 // Meniu aplicație macOS (Cmd+Q)

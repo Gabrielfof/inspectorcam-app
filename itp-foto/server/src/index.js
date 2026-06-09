@@ -135,9 +135,15 @@ function start() {
 
 function stop() {
   return new Promise(resolve => {
-    stopMdns().then(() => {
-      if (_server) _server.close(resolve);
-      else resolve();
+    stopMdns().catch(() => {}).then(() => {
+      if (_server) {
+        // Inchide fortat toate conexiunile keep-alive (altfel close() nu se termina niciodata)
+        if (typeof _server.closeAllConnections === 'function') _server.closeAllConnections();
+        _server.close(() => resolve());
+        setTimeout(resolve, 2000); // safety: max 2 secunde
+      } else {
+        resolve();
+      }
     });
   });
 }
