@@ -761,26 +761,26 @@ html, body {
 /* F1: Strip cu miniaturi poze deja făcute */
 .photo-strip {
   position: fixed;
-  bottom: calc(var(--safe-bot) + 100px);
+  bottom: calc(var(--safe-bot) + 108px);
   left: 0;
   right: 0;
-  z-index: 11;
+  z-index: 30;
   display: flex;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 8px;
+  padding: 8px 14px;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%);
+  background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%);
 }
 .photo-strip::-webkit-scrollbar { display: none; }
 .photo-strip.hidden { display: none; }
 
 .strip-thumb {
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
+  width: 62px;
+  height: 62px;
+  border-radius: 10px;
   overflow: hidden;
   border: 2px solid rgba(255,255,255,0.2);
   background: rgba(255,255,255,0.08);
@@ -801,7 +801,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: rgba(255,255,255,0.3);
   cursor: default;

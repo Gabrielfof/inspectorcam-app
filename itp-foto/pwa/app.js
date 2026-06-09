@@ -386,8 +386,8 @@ const App = (() => {
     const total = insp.activeSteps.length;
 
     document.getElementById('step-counter').textContent = `${index + 1} / ${total}`;
-    document.getElementById('step-label').textContent   = step.label;
-    document.getElementById('step-hint').textContent    = step.hint || '';
+    document.getElementById('step-label').textContent   = `Etapa ${index + 1}`;
+    document.getElementById('step-hint').textContent    = step.hint || step.label;
 
     // Afișăm placa curentă în cameră
     const plateIndicator = document.getElementById('camera-plate-indicator');
@@ -409,7 +409,7 @@ const App = (() => {
       if (cameraMode === 'fileinput') {
         const captureBtn = document.querySelector('.btn-capture');
         if (captureBtn) captureBtn.onclick = captureViaFileInput;
-        showStepInstruction(index + 1, total, step.label);
+        showStepInstruction(index + 1, total, `Etapa ${index + 1}`);
       } else {
         await ensureCameraRunning();
       }
