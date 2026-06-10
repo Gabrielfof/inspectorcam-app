@@ -388,8 +388,10 @@ const App = (() => {
     const total = insp.activeSteps.length;
 
     document.getElementById('step-counter').textContent = `Etapa ${index + 1}`;
-    document.getElementById('step-label').textContent   = `Etapa ${index + 1}`;
-    document.getElementById('step-hint').textContent    = step.hint || step.label;
+    const stepLabelEl = document.getElementById('step-label');
+    if (stepLabelEl) stepLabelEl.textContent = `Etapa ${index + 1}`;
+    const stepHintEl = document.getElementById('step-hint');
+    if (stepHintEl) stepHintEl.textContent = step.hint || step.label;
 
     // Afișăm placa curentă în cameră
     const plateIndicator = document.getElementById('camera-plate-indicator');
