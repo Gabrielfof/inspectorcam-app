@@ -357,7 +357,7 @@ const App = (() => {
     input.value = formatted;
   }
 
-  function confirmPlate() {
+  async function confirmPlate() {
     const raw = formatPlate(document.getElementById('plate-input').value);
     if (!raw) { toast('Introduceți numărul de înmatriculare.', 'error'); return; }
 
@@ -367,16 +367,32 @@ const App = (() => {
       return;
     }
 
-    state.activePlates.set(raw, {
-      id:          generateId(),
-      plate:       raw,
-      notes:       '',
-      photos:      [],
-      currentStep: 0,
-      activeSteps: getActiveSteps(),
-    });
+    // Verificăm dacă a fost trimisă azi → adăugăm la inspecția existentă
+    let appendToInspectionId = null;
+    let startStep0 = 0;
+    try {
+      const today     = new Date().toISOString().slice(0, 10);
+      const completed = await Storage.getCompletedPlates();
+      const match     = completed.find(c => c.plate === raw && c.date === today);
+      if (match) {
+        appendToInspectionId = match.id;
+        startStep0           = match.photos_saved || 0;
+      }
+    } catch { /* ignorăm */ }
+
+    const insp = {
+      id:                   generateId(),
+      plate:                raw,
+      notes:                '',
+      photos:               [],
+      currentStep:          startStep0,
+      activeSteps:          getActiveSteps(),
+      appendToInspectionId,
+    };
+    state.activePlates.set(raw, insp);
     state.currentPlate = raw;
-    startStep(0);
+    Storage.saveActivePlate(insp).catch(() => {});
+    startStep(startStep0);
   }
 
   /* Continuă fotografierea pentru o mașină activă */
@@ -775,6 +791,7 @@ const App = (() => {
       photos:       insp.photos.map(p => ({
         step:      p.step,
         blob:      p.blob,
+        dataUrl:   p.dataUrl   || null,
         source:    p.source,
         note:      p.note,
         timestamp: p.timestamp,
@@ -796,6 +813,16 @@ const App = (() => {
         result = await Sync.uploadAdditionalPhotos(appendId, payload);
       } else {
         result = await Sync.uploadInspection(payload);
+      }
+      // Salvăm ID-ul serverului pentru a detecta duplicate la aceeași placă azi
+      if (result.inspection?.id) {
+        const today = new Date().toISOString().slice(0, 10);
+        Storage.saveCompletedPlate({
+          id:           result.inspection.id,
+          plate:        payload.plate,
+          date:         today,
+          photos_saved: result.inspection.photos_saved ?? result.inspection.photos_added ?? 0,
+        }).catch(() => {});
       }
       cleanup();
       showSuccess(result.inspection, false);
@@ -834,8 +861,9 @@ const App = (() => {
     // F3: buton "Adaugă poze" — vizibil doar când nu e offline
     const addMoreBtn = document.getElementById('success-add-more');
     if (addMoreBtn) {
-      addMoreBtn.dataset.plate        = inspection.plate || '';
-      addMoreBtn.dataset.inspectionId = inspection.id   || '';
+      addMoreBtn.dataset.plate        = inspection.plate        || '';
+      addMoreBtn.dataset.inspectionId = inspection.id          || '';
+      addMoreBtn.dataset.photoCount   = inspection.photos_saved ?? inspection.photos_added ?? 0;
       addMoreBtn.style.display = isOffline ? 'none' : '';
     }
 
@@ -843,31 +871,30 @@ const App = (() => {
   }
 
   /* F3: Redeschide o inspecție finalizată pentru a adăuga poze suplimentare */
-  function reopenForMorePhotos(plate, inspectionId) {
+  function reopenForMorePhotos(plate, inspectionId, photoCount) {
     if (!plate) return;
+    const startIdx = Math.min(parseInt(photoCount) || 0, getActiveSteps().length - 1);
 
     if (state.activePlates.has(plate)) {
-      // Cazul e deja activ — actualizăm appendToInspectionId și continuăm
       const insp = state.activePlates.get(plate);
       if (inspectionId) insp.appendToInspectionId = inspectionId;
       resumePlate(plate);
       return;
     }
 
-    // appendToInspectionId e stocat în inspecție (persists în IndexedDB la reload)
     const insp = {
       id:                   generateId(),
       plate:                plate,
       notes:                '',
       photos:               [],
-      currentStep:          0,
+      currentStep:          startIdx,
       activeSteps:          getActiveSteps(),
       appendToInspectionId: inspectionId || null,
     };
     state.activePlates.set(plate, insp);
     state.currentPlate = plate;
     Storage.saveActivePlate(insp).catch(() => {});
-    startStep(0);
+    startStep(startIdx);
   }
 
   /* ============================================================
