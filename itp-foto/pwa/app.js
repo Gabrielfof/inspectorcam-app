@@ -820,12 +820,26 @@ const App = (() => {
       // Salvăm ID-ul serverului pentru a detecta duplicate la aceeași placă azi
       if (result.inspection?.id) {
         const today = new Date().toISOString().slice(0, 10);
-        Storage.saveCompletedPlate({
-          id:           result.inspection.id,
-          plate:        payload.plate,
-          date:         today,
-          photos_saved: result.inspection.photos_saved ?? result.inspection.photos_added ?? 0,
-        }).catch(() => {});
+        let totalSaved;
+        if (appendId) {
+          // Total cumulativ: poze anterioare + poze adăugate acum
+          let prevSaved = 0;
+          try {
+            const completed = await Storage.getCompletedPlates();
+            const existing = completed.find(c => c.id === appendId);
+            prevSaved = existing?.photos_saved || 0;
+          } catch {}
+          totalSaved = prevSaved + (result.inspection.photos_added || 0);
+          Storage.saveCompletedPlate({
+            id: appendId, plate: payload.plate, date: today, photos_saved: totalSaved,
+          }).catch(() => {});
+          result = { ...result, inspection: { ...result.inspection, photos_saved: totalSaved } };
+        } else {
+          totalSaved = result.inspection.photos_saved ?? 0;
+          Storage.saveCompletedPlate({
+            id: result.inspection.id, plate: payload.plate, date: today, photos_saved: totalSaved,
+          }).catch(() => {});
+        }
       }
       cleanup();
       showSuccess(result.inspection, false);
@@ -920,12 +934,23 @@ const App = (() => {
         // Salvăm în completed_plates și la sync, nu doar la submit direct
         if (result?.inspection?.id) {
           const today = new Date().toISOString().slice(0, 10);
-          Storage.saveCompletedPlate({
-            id:           result.inspection.id,
-            plate:        inspection.plate,
-            date:         today,
-            photos_saved: result.inspection.photos_saved ?? result.inspection.photos_added ?? 0,
-          }).catch(() => {});
+          if (inspection.appendToInspectionId) {
+            let prevSaved = 0;
+            try {
+              const completed = await Storage.getCompletedPlates();
+              const existing = completed.find(c => c.id === inspection.appendToInspectionId);
+              prevSaved = existing?.photos_saved || 0;
+            } catch {}
+            Storage.saveCompletedPlate({
+              id: inspection.appendToInspectionId, plate: inspection.plate, date: today,
+              photos_saved: prevSaved + (result.inspection.photos_added || 0),
+            }).catch(() => {});
+          } else {
+            Storage.saveCompletedPlate({
+              id: result.inspection.id, plate: inspection.plate, date: today,
+              photos_saved: result.inspection.photos_saved ?? 0,
+            }).catch(() => {});
+          }
         }
         toast(`${inspection.plate} — sincronizat cu serverul.`, 'success');
       } catch {

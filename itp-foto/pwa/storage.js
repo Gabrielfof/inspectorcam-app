@@ -2,7 +2,7 @@
 
 const Storage = (() => {
   const DB_NAME    = 'inspectorcam';
-  const DB_VERSION = 2;
+  const DB_VERSION = 3;
   let db = null;
 
   function open() {
