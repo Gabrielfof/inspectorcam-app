@@ -21,9 +21,8 @@ const App = (() => {
     inspector:    null,
     config:       {},
     inspectors:   [],
-    activePlates: new Map(), // plate → {id, plate, notes, photos, currentStep, activeSteps}
+    activePlates: new Map(), // plate → {id, plate, notes, photos, currentStep, activeSteps, appendToInspectionId?}
     currentPlate: null,
-    appendToInspectionId: null, // dacă e setat, pozele noi se adaugă la inspecția existentă cu acest ID
   };
 
   let cameraRunning = false;
@@ -217,7 +216,6 @@ const App = (() => {
   function logout() {
     state.activePlates.clear();
     state.currentPlate = null;
-    state.appendToInspectionId = null;
     sessionStorage.removeItem('itp-inspector');
     state.inspector = null;
     Camera.stop();
@@ -784,13 +782,12 @@ const App = (() => {
     };
 
     const plateKey = state.currentPlate;
-    const appendId = state.appendToInspectionId;
+    const appendId = insp.appendToInspectionId || null;
 
     function cleanup() {
       Storage.deleteActivePlate(insp.id).catch(() => {});
       state.activePlates.delete(plateKey);
       state.currentPlate = null;
-      state.appendToInspectionId = null;
     }
 
     try {
@@ -849,23 +846,27 @@ const App = (() => {
   function reopenForMorePhotos(plate, inspectionId) {
     if (!plate) return;
 
-    // Marcăm că pozele noi se adaugă la inspecția existentă (nu se creează una nouă)
-    state.appendToInspectionId = inspectionId || null;
-
     if (state.activePlates.has(plate)) {
+      // Cazul e deja activ — actualizăm appendToInspectionId și continuăm
+      const insp = state.activePlates.get(plate);
+      if (inspectionId) insp.appendToInspectionId = inspectionId;
       resumePlate(plate);
       return;
     }
 
-    state.activePlates.set(plate, {
-      id:          generateId(),
-      plate:       plate,
-      notes:       '',
-      photos:      [],
-      currentStep: 0,
-      activeSteps: getActiveSteps(),
-    });
+    // appendToInspectionId e stocat în inspecție (persists în IndexedDB la reload)
+    const insp = {
+      id:                   generateId(),
+      plate:                plate,
+      notes:                '',
+      photos:               [],
+      currentStep:          0,
+      activeSteps:          getActiveSteps(),
+      appendToInspectionId: inspectionId || null,
+    };
+    state.activePlates.set(plate, insp);
     state.currentPlate = plate;
+    Storage.saveActivePlate(insp).catch(() => {});
     startStep(0);
   }
 

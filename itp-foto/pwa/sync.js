@@ -35,6 +35,15 @@ const Sync = (() => {
     });
   }
 
+  // Dacă blob-ul e invalid dar există dataUrl, reconstituim blob-ul
+  async function ensureBlobs(photos) {
+    for (const p of photos) {
+      if ((!(p.blob instanceof Blob) || p.blob.size === 0) && p.dataUrl) {
+        try { p.blob = await fetch(p.dataUrl).then(r => r.blob()); } catch { /* ignorăm */ }
+      }
+    }
+  }
+
   // Construiește FormData cu meta și fișiere aliniate pe același index
   function buildPhotoFormData(fd, photos) {
     const valid = photos.filter(p => p.blob instanceof Blob && p.blob.size > 0);
@@ -49,6 +58,7 @@ const Sync = (() => {
   }
 
   async function uploadInspection(inspection) {
+    await ensureBlobs(inspection.photos);
     const fd = new FormData();
     fd.append('plate',        inspection.plate);
     fd.append('inspector_id', inspection.inspector_id);
@@ -68,6 +78,7 @@ const Sync = (() => {
   }
 
   async function uploadAdditionalPhotos(inspectionId, inspection) {
+    await ensureBlobs(inspection.photos);
     const fd = new FormData();
     fd.append('device_id',   inspection.device_id || '');
     fd.append('app_version', '1.0.0');
