@@ -387,7 +387,7 @@ const App = (() => {
     const step  = insp.activeSteps[index];
     const total = insp.activeSteps.length;
 
-    document.getElementById('step-counter').textContent = `${index + 1} / ${total}`;
+    document.getElementById('step-counter').textContent = `Etapa ${index + 1}`;
     document.getElementById('step-label').textContent   = `Etapa ${index + 1}`;
     document.getElementById('step-hint').textContent    = step.hint || step.label;
 
@@ -458,9 +458,8 @@ const App = (() => {
     });
   }
 
-  function showStepInstruction(index, total, label) {
-    document.getElementById('step-instruction-number').textContent = `Fotografia ${index} din ${total}`;
-    document.getElementById('step-instruction-label').textContent  = label;
+  function showStepInstruction(index, _total, label) {
+    document.getElementById('step-instruction-label').textContent = label;
     document.getElementById('step-instruction').classList.remove('hidden');
   }
 

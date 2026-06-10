@@ -965,6 +965,19 @@ html, body {
   background: rgba(0, 0, 0, 0.72);
   animation: stepFadeIn 0.2s ease;
   pointer-events: all;
+  -webkit-tap-highlight-color: transparent;
+}
+.step-instruction-back {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  left: 16px;
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1001,6 +1014,7 @@ html, body {
 
 .step-instruction-cta {
   margin-top: 8px;
+  cursor: pointer;
   background: var(--accent);
   color: #fff;
   font-family: var(--font-mono);

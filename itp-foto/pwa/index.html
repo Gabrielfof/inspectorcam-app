@@ -123,10 +123,10 @@
   </div>
 
   <!-- Step instruction overlay (apare înainte de deschiderea camerei) -->
-  <div class="step-instruction hidden" id="step-instruction" onclick="App.startCapture()">
-    <div class="step-instruction-number" id="step-instruction-number"></div>
+  <div class="step-instruction hidden" id="step-instruction">
+    <button class="step-instruction-back" onclick="App.prevStep()">← Înapoi</button>
     <div class="step-instruction-label" id="step-instruction-label"></div>
-    <div class="step-instruction-cta">Apasă pentru a fotografia</div>
+    <div class="step-instruction-cta" onclick="App.startCapture()">Apasă pentru a fotografia</div>
   </div>
 
   <!-- Note indicator (top-right when note is set) -->
