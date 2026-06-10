@@ -155,4 +155,73 @@ router.post('/', upload.array('files'), (req, res) => {
   }
 });
 
+// POST /api/inspections/:id/photos — adaugă poze la o inspecție existentă
+router.post('/:id/photos', upload.array('files'), (req, res) => {
+  const db = getDb();
+  try {
+    const { id } = req.params;
+    const inspection = db.prepare('SELECT * FROM inspections WHERE id = ?').get(id);
+    if (!inspection) {
+      return res.status(404).json({ ok: false, eroare: 'Inspecția nu a fost găsită.' });
+    }
+
+    const folderPath = inspection.folder_path;
+    if (!fs.existsSync(folderPath)) {
+      fs.mkdirSync(folderPath, { recursive: true });
+    }
+
+    let photosMeta = [];
+    try {
+      photosMeta = req.body.photos_meta ? JSON.parse(req.body.photos_meta) : [];
+    } catch { /* continuăm fără metadate */ }
+
+    const files = req.files || [];
+    const savedPhotos = [];
+    let nextSeq = getNextPhotoNumber(folderPath, inspection.plate);
+
+    files.forEach((file, index) => {
+      const meta = photosMeta[index] || {};
+      const step = meta.step || String(index + 1).padStart(2, '0');
+      const filename = getPhotoFilename(inspection.plate, nextSeq + index);
+      const destPath = getPhotoPath(folderPath, filename);
+
+      fs.writeFileSync(destPath, file.buffer);
+
+      savedPhotos.push({
+        id: uuidv4(),
+        step,
+        filename,
+        note:      meta.note      || null,
+        source:    meta.source    || 'camera',
+        ocr_plate: meta.ocr_plate || null,
+        timestamp: meta.timestamp || new Date().toISOString(),
+      });
+    });
+
+    const insertPhoto = db.prepare(`
+      INSERT INTO photos (id, inspection_id, step, filename, note, source, ocr_plate, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    db.transaction(() => {
+      for (const p of savedPhotos) {
+        insertPhoto.run(p.id, id, p.step, p.filename, p.note, p.source, p.ocr_plate, p.timestamp);
+      }
+    })();
+
+    res.status(201).json({
+      ok: true,
+      inspection: {
+        id:           inspection.id,
+        folder_path:  folderPath,
+        plate:        inspection.plate,
+        photos_added: savedPhotos.length,
+      },
+    });
+  } catch (err) {
+    console.error('[upload] POST /api/inspections/:id/photos:', err);
+    res.status(500).json({ ok: false, eroare: 'Eroare la salvarea fotografiilor.' });
+  }
+});
+
 module.exports = router;

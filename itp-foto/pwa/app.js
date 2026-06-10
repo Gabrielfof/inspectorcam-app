@@ -23,6 +23,7 @@ const App = (() => {
     inspectors:   [],
     activePlates: new Map(), // plate → {id, plate, notes, photos, currentStep, activeSteps}
     currentPlate: null,
+    appendToInspectionId: null, // dacă e setat, pozele noi se adaugă la inspecția existentă cu acest ID
   };
 
   let cameraRunning = false;
@@ -204,6 +205,7 @@ const App = (() => {
   function logout() {
     state.activePlates.clear();
     state.currentPlate = null;
+    state.appendToInspectionId = null;
     sessionStorage.removeItem('itp-inspector');
     state.inspector = null;
     Camera.stop();
@@ -769,19 +771,28 @@ const App = (() => {
     };
 
     const plateKey = state.currentPlate;
+    const appendId = state.appendToInspectionId;
 
-    try {
-      const result = await Sync.uploadInspection(payload);
+    function cleanup() {
       Storage.deleteActivePlate(insp.id).catch(() => {});
       state.activePlates.delete(plateKey);
       state.currentPlate = null;
+      state.appendToInspectionId = null;
+    }
+
+    try {
+      let result;
+      if (appendId) {
+        result = await Sync.uploadAdditionalPhotos(appendId, payload);
+      } else {
+        result = await Sync.uploadInspection(payload);
+      }
+      cleanup();
       showSuccess(result.inspection, false);
     } catch {
       try {
         await Storage.savePending(payload);
-        Storage.deleteActivePlate(insp.id).catch(() => {});
-        state.activePlates.delete(plateKey);
-        state.currentPlate = null;
+        cleanup();
         showSuccess({ plate: payload.plate, photos_saved: payload.photos.length }, true);
       } catch (saveErr) {
         toast('Eroare la salvarea locală: ' + saveErr.message, 'error');
@@ -813,7 +824,8 @@ const App = (() => {
     // F3: buton "Adaugă poze" — vizibil doar când nu e offline
     const addMoreBtn = document.getElementById('success-add-more');
     if (addMoreBtn) {
-      addMoreBtn.dataset.plate = inspection.plate || '';
+      addMoreBtn.dataset.plate        = inspection.plate || '';
+      addMoreBtn.dataset.inspectionId = inspection.id   || '';
       addMoreBtn.style.display = isOffline ? 'none' : '';
     }
 
@@ -821,16 +833,17 @@ const App = (() => {
   }
 
   /* F3: Redeschide o inspecție finalizată pentru a adăuga poze suplimentare */
-  function reopenForMorePhotos(plate) {
+  function reopenForMorePhotos(plate, inspectionId) {
     if (!plate) return;
 
+    // Marcăm că pozele noi se adaugă la inspecția existentă (nu se creează una nouă)
+    state.appendToInspectionId = inspectionId || null;
+
     if (state.activePlates.has(plate)) {
-      // Cazul e deja activ — pur și simplu continuăm
       resumePlate(plate);
       return;
     }
 
-    // Creăm un caz nou cu aceeași placă (pozele noi vor fi trimise separat)
     state.activePlates.set(plate, {
       id:          generateId(),
       plate:       plate,
