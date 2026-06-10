@@ -801,6 +801,9 @@ const App = (() => {
     const plateKey = state.currentPlate;
     const appendId = insp.appendToInspectionId || null;
 
+    // Includem appendToInspectionId în payload — necesar dacă ajunge în pending queue
+    if (appendId) payload.appendToInspectionId = appendId;
+
     function cleanup() {
       Storage.deleteActivePlate(insp.id).catch(() => {});
       state.activePlates.delete(plateKey);
@@ -907,8 +910,23 @@ const App = (() => {
 
     for (const inspection of pending) {
       try {
-        await Sync.uploadInspection(inspection);
+        let result;
+        if (inspection.appendToInspectionId) {
+          result = await Sync.uploadAdditionalPhotos(inspection.appendToInspectionId, inspection);
+        } else {
+          result = await Sync.uploadInspection(inspection);
+        }
         await Storage.deletePending(inspection.id);
+        // Salvăm în completed_plates și la sync, nu doar la submit direct
+        if (result?.inspection?.id) {
+          const today = new Date().toISOString().slice(0, 10);
+          Storage.saveCompletedPlate({
+            id:           result.inspection.id,
+            plate:        inspection.plate,
+            date:         today,
+            photos_saved: result.inspection.photos_saved ?? result.inspection.photos_added ?? 0,
+          }).catch(() => {});
+        }
         toast(`${inspection.plate} — sincronizat cu serverul.`, 'success');
       } catch {
         // Still unreachable; will retry next cycle

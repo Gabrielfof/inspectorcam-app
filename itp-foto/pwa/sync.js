@@ -1,11 +1,10 @@
 'use strict';
 
 const Sync = (() => {
-  // Since the PWA is served by the Node server, same origin = server URL.
   const BASE = window.location.origin;
 
   async function api(path, options = {}) {
-    const res = await fetch(BASE + path, options);
+    const res  = await fetch(BASE + path, options);
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(json.eroare || `Eroare HTTP ${res.status}`);
     return json;
@@ -35,11 +34,32 @@ const Sync = (() => {
     });
   }
 
-  // Dacă blob-ul e invalid dar există dataUrl, reconstituim blob-ul
+  // Verifică dacă un blob e cu adevărat lizibil (nu doar instanceof Blob)
+  // Pe iOS, blob-urile "zombie" raportează size > 0 dar nu pot fi citite
+  function isBlobReadable(blob) {
+    if (!(blob instanceof Blob) || blob.size === 0) return Promise.resolve(false);
+    return new Promise(resolve => {
+      const r = new FileReader();
+      r.onload  = () => resolve(true);
+      r.onerror = () => resolve(false);
+      r.readAsArrayBuffer(blob.slice(0, 64)); // citim primii 64 bytes
+    });
+  }
+
+  // Reconstituie blob-urile moarte din dataUrl înainte de upload
   async function ensureBlobs(photos) {
     for (const p of photos) {
-      if ((!(p.blob instanceof Blob) || p.blob.size === 0) && p.dataUrl) {
-        try { p.blob = await fetch(p.dataUrl).then(r => r.blob()); } catch { /* ignorăm */ }
+      const alive = await isBlobReadable(p.blob);
+      if (!alive) {
+        if (p.dataUrl) {
+          try {
+            p.blob = await fetch(p.dataUrl).then(r => r.blob());
+          } catch {
+            p.blob = null; // nu poate fi recuperat
+          }
+        } else {
+          p.blob = null; // no dataUrl → marchează ca invalid
+        }
       }
     }
   }
@@ -95,5 +115,8 @@ const Sync = (() => {
     }
   }
 
-  return { fetchInspectors, fetchConfig, fetchTodayInspections, verifyPin, uploadInspection, uploadAdditionalPhotos };
+  return {
+    fetchInspectors, fetchConfig, fetchTodayInspections, verifyPin,
+    uploadInspection, uploadAdditionalPhotos,
+  };
 })();
