@@ -111,19 +111,17 @@
     <img id="preview-img" class="hidden" alt="Previzualizare fotografie">
   </div>
 
-  <!-- Top overlay -->
+  <!-- Top bar — deasupra overlay-ului -->
   <div class="camera-top">
+    <button class="camera-back-btn" onclick="App.prevStep()">← Înapoi</button>
     <div class="camera-step-info">
       <div class="camera-plate-pill" id="camera-plate-indicator"></div>
-      <div class="step-counter-pill" id="step-counter">1 / 6</div>
-      <div class="step-label-text" id="step-label">Față mașină</div>
-      <div class="step-hint-text" id="step-hint"></div>
+      <div class="step-counter-pill" id="step-counter"></div>
     </div>
   </div>
 
   <!-- Step instruction overlay (apare înainte de deschiderea camerei) -->
   <div class="step-instruction hidden" id="step-instruction">
-    <button class="step-instruction-back" onclick="App.prevStep()">← Înapoi</button>
     <div class="step-instruction-label" id="step-instruction-label"></div>
     <div class="step-instruction-cta" onclick="App.startCapture()">Apasă pentru a fotografia</div>
   </div>
@@ -144,10 +142,8 @@
   <!-- F1: Strip minimal cu pozele deja făcute -->
   <div id="photo-strip" class="photo-strip hidden"></div>
 
-  <!-- Capture controls (shown while in live camera mode) -->
-  <div class="camera-bottom" id="capture-controls">
-    <button class="btn-capture" onclick="App.capturePhoto()" aria-label="Fotografiază"></button>
-  </div>
+  <!-- Capture controls -->
+  <div class="camera-bottom hidden" id="capture-controls"></div>
 
   <!-- Preview controls (shown after capture) -->
   <div class="camera-bottom hidden" id="preview-controls">
