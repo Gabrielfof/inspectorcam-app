@@ -9,7 +9,8 @@
     "electron": "npm run rebuild-electron && ELECTRON_RUN_AS_NODE= electron .",
     "rebuild-node": "npm rebuild better-sqlite3",
     "rebuild-electron": "ELECTRON_RUN_AS_NODE= electron-rebuild -f -w better-sqlite3",
-    "prebuild": "node scripts/write-pwa-source-path.js",
+    "sync-version": "node scripts/sync-version.js",
+    "prebuild": "node scripts/write-pwa-source-path.js && node scripts/sync-version.js",
     "build": "electron-builder",
     "sync-pwa": "node scripts/sync-pwa.js",
     "watch-pwa": "node scripts/sync-pwa.js --watch"
