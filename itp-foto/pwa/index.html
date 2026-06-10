@@ -113,7 +113,6 @@
 
   <!-- Top overlay -->
   <div class="camera-top">
-    <button class="camera-back-btn" onclick="App.prevStep()">←</button>
     <div class="camera-step-info">
       <div class="camera-plate-pill" id="camera-plate-indicator"></div>
       <div class="step-counter-pill" id="step-counter">1 / 6</div>
@@ -147,9 +146,7 @@
 
   <!-- Capture controls (shown while in live camera mode) -->
   <div class="camera-bottom" id="capture-controls">
-    <button class="btn-import-gallery" onclick="App.importFromGallery()" title="Import din galerie">Galerie</button>
     <button class="btn-capture" onclick="App.capturePhoto()" aria-label="Fotografiază"></button>
-    <button class="btn-note-camera" onclick="App.openNoteModal()" title="Adaugă notiță">Notiță</button>
   </div>
 
   <!-- Preview controls (shown after capture) -->

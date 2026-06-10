@@ -487,7 +487,7 @@ const App = (() => {
       if (captureBtn) captureBtn.onclick = captureViaFileInput;
       const insp = currentInspection();
       const total = insp.activeSteps.length;
-      showStepInstruction(insp.currentStep + 1, total, insp.activeSteps[insp.currentStep]?.label || '');
+      showStepInstruction(insp.currentStep + 1, total, `Etapa ${insp.currentStep + 1}`);
     }
   }
 
