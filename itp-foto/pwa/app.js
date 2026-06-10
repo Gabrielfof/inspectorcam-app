@@ -244,6 +244,19 @@ const App = (() => {
       Storage.getPending().catch(() => []),
     ]);
 
+    // Sincronizăm completed_plates din server — previne duplicate chiar dacă
+    // store-ul local era gol (upgrade DB) sau inspecția a fost trimisă pe alt device
+    for (const insp of serverInspections) {
+      if ((insp.datetime || '').slice(0, 10) === today) {
+        Storage.saveCompletedPlate({
+          id:           insp.id,
+          plate:        insp.plate,
+          date:         today,
+          photos_saved: (insp.photos || []).length,
+        }).catch(() => {});
+      }
+    }
+
     const pendingToday = allPending.filter(p => (p.datetime || '').slice(0, 10) === today);
 
     const allItems = [
@@ -295,8 +308,9 @@ const App = (() => {
         ? '<span class="sync-badge pending">local</span>'
         : '<span class="sync-badge synced">ok</span>';
       // F3: buton "Adaugă poze" pentru orice inspecție finalizată azi
+      const photoCount = (insp.photos || []).length;
       const addBtn = insp.status === 'synced'
-        ? `<button class="btn-add-more" onclick="App.reopenForMorePhotos('${escHtml(insp.plate)}')">+ Poze</button>`
+        ? `<button class="btn-add-more" onclick="App.reopenForMorePhotos('${escHtml(insp.plate)}','${escHtml(insp.id)}','${photoCount}')">+ Poze</button>`
         : '';
       return `
         <div class="inspection-item">
