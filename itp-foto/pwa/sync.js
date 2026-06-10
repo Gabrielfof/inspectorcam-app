@@ -35,30 +35,31 @@ const Sync = (() => {
     });
   }
 
+  // Construiește FormData cu meta și fișiere aliniate pe același index
+  function buildPhotoFormData(fd, photos) {
+    const valid = photos.filter(p => p.blob instanceof Blob && p.blob.size > 0);
+    fd.append('photos_meta', JSON.stringify(valid.map(p => ({
+      step:      p.step,
+      note:      p.note      || '',
+      source:    p.source    || 'camera',
+      ocr_plate: p.ocr_plate || null,
+      timestamp: p.timestamp,
+    }))));
+    valid.forEach(p => fd.append('files', p.blob, `${p.step}.jpg`));
+  }
+
   async function uploadInspection(inspection) {
     const fd = new FormData();
     fd.append('plate',        inspection.plate);
     fd.append('inspector_id', inspection.inspector_id);
     fd.append('datetime',     inspection.datetime);
     fd.append('notes',        inspection.notes || '');
-    fd.append('device_id',   inspection.device_id || '');
+    fd.append('device_id',    inspection.device_id || '');
     fd.append('app_version',  '1.0.0');
-
-    const meta = inspection.photos.map(p => ({
-      step:      p.step,
-      note:      p.note      || '',
-      source:    p.source    || 'camera',
-      ocr_plate: p.ocr_plate || null,
-      timestamp: p.timestamp,
-    }));
-    fd.append('photos_meta', JSON.stringify(meta));
-
-    inspection.photos
-      .filter(p => p.blob instanceof Blob && p.blob.size > 0)
-      .forEach(p => fd.append('files', p.blob, `${p.step}.jpg`));
+    buildPhotoFormData(fd, inspection.photos);
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15_000);
+    const timer = setTimeout(() => controller.abort(), 30_000);
     try {
       return await api('/api/inspections', { method: 'POST', body: fd, signal: controller.signal });
     } finally {
@@ -68,24 +69,12 @@ const Sync = (() => {
 
   async function uploadAdditionalPhotos(inspectionId, inspection) {
     const fd = new FormData();
-    fd.append('device_id',  inspection.device_id || '');
+    fd.append('device_id',   inspection.device_id || '');
     fd.append('app_version', '1.0.0');
-
-    const meta = inspection.photos.map(p => ({
-      step:      p.step,
-      note:      p.note      || '',
-      source:    p.source    || 'camera',
-      ocr_plate: p.ocr_plate || null,
-      timestamp: p.timestamp,
-    }));
-    fd.append('photos_meta', JSON.stringify(meta));
-
-    inspection.photos
-      .filter(p => p.blob instanceof Blob && p.blob.size > 0)
-      .forEach(p => fd.append('files', p.blob, `${p.step}.jpg`));
+    buildPhotoFormData(fd, inspection.photos);
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15_000);
+    const timer = setTimeout(() => controller.abort(), 30_000);
     try {
       return await api(`/api/inspections/${encodeURIComponent(inspectionId)}/photos`, {
         method: 'POST', body: fd, signal: controller.signal,

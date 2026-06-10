@@ -59,6 +59,18 @@ const App = (() => {
     try {
       const savedPlates = await Storage.getActivePlates();
       for (const insp of savedPlates) {
+        // Repară pozele: reconstituie blob din dataUrl dacă blob-ul e invalid,
+        // sau generează dataUrl dacă lipseşte — evită "?" după reload iOS
+        for (const photo of (insp.photos || [])) {
+          if (photo.dataUrl && (!(photo.blob instanceof Blob) || photo.blob.size === 0)) {
+            try {
+              photo.blob = await fetch(photo.dataUrl).then(r => r.blob());
+              photo.baseBlob = photo.blob;
+            } catch { /* lasăm blob-ul invalid, va fi filtrat la upload */ }
+          } else if (!photo.dataUrl && photo.blob instanceof Blob && photo.blob.size > 0) {
+            photo.dataUrl = await blobToDataUrl(photo.blob);
+          }
+        }
         state.activePlates.set(insp.plate, insp);
       }
     } catch { /* ignore */ }

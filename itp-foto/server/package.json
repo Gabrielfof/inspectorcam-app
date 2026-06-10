@@ -1,6 +1,6 @@
 {
   "name": "itp-foto-server",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Server local InspectorCam - fotografiere vehicule la ITP",
   "main": "src/electron/main.js",
   "scripts": {
