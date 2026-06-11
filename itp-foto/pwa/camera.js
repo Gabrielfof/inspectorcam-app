@@ -44,8 +44,8 @@ const Camera = (() => {
 
   // Rezoluție intenționat redusă — fotografiile trebuie să fie de calitate slabă,
   // pixelate la zoom (cerință operațională ITP).
-  const MAX_W = 640;
-  const MAX_H = 480;
+  const MAX_W = 960;
+  const MAX_H = 720;
 
   function scaleDimensions(w, h) {
     const scale = Math.min(1, MAX_W / w, MAX_H / h);
@@ -196,7 +196,7 @@ const Camera = (() => {
       canvas.toBlob(
         blob => blob ? resolve(blob) : reject(new Error('Eroare la convertirea imaginii.')),
         'image/jpeg',
-        0.35
+        0.55
       );
     });
   }
