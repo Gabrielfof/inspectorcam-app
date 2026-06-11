@@ -541,12 +541,19 @@ const App = (() => {
     input.onchange = async () => {
       const file = input.files[0];
       if (!file) return;
+
+      // Capturăm referința ÎNAINTE de orice await — dacă userul dă back sau
+      // închide telefonul în timp ce se procesează, inspecția rămâne accesibilă
+      const insp = currentInspection();
+      if (!insp) return;
+      const step = insp.activeSteps[insp.currentStep];
+      if (!step) return;
+
+      hideStepInstruction();
       toast('Se procesează…', 'info');
       try {
         const blob = await Camera.processImportedFile(file, buildWatermark());
-        const insp = currentInspection();
-        const step = insp.activeSteps[insp.currentStep];
-        savePhoto({ step: step.id, blob, source: 'camera' });
+        await savePhoto({ step: step.id, blob, source: 'camera' }, insp);
         showPreview(blob);
       } catch (err) {
         toast(err.message, 'error');
@@ -557,10 +564,12 @@ const App = (() => {
 
   async function capturePhoto() {
     const insp = currentInspection();
+    if (!insp) return;
     const step = insp.activeSteps[insp.currentStep];
+    if (!step) return;
     try {
       const blob = await Camera.capture(buildWatermark());
-      savePhoto({ step: step.id, blob, source: 'camera' });
+      await savePhoto({ step: step.id, blob, source: 'camera' }, insp);
       showPreview(blob);
     } catch (err) {
       toast(err.message, 'error');
@@ -576,12 +585,15 @@ const App = (() => {
       const file = input.files[0];
       if (!file) return;
 
+      const insp = currentInspection();
+      if (!insp) return;
+      const step = insp.activeSteps[insp.currentStep];
+      if (!step) return;
+
       toast('Se procesează imaginea…', 'info');
       try {
         const blob = await Camera.processImportedFile(file, buildWatermark(true));
-        const insp = currentInspection();
-        const step = insp.activeSteps[insp.currentStep];
-        savePhoto({ step: step.id, blob, source: 'import' });
+        await savePhoto({ step: step.id, blob, source: 'import' }, insp);
         showPreview(blob);
         toast('Fotografie importată și marcată.', 'success');
       } catch (err) {
@@ -608,8 +620,9 @@ const App = (() => {
     });
   }
 
-  async function savePhoto(data) {
-    const insp = currentInspection();
+  async function savePhoto(data, inspRef) {
+    const insp = inspRef || currentInspection();
+    if (!insp) return;
     const dataUrl = await blobToDataUrl(data.blob);
     const photo = {
       step:      data.step,
