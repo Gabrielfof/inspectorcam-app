@@ -307,13 +307,15 @@ const App = (() => {
       const badge = insp.status === 'pending'
         ? '<span class="sync-badge pending">local</span>'
         : '<span class="sync-badge synced">ok</span>';
-      // F3: buton "Adaugă poze" pentru orice inspecție finalizată azi
       const photoCount = (insp.photos || []).length;
       const addBtn = insp.status === 'synced'
-        ? `<button class="btn-add-more" onclick="App.reopenForMorePhotos('${escHtml(insp.plate)}','${escHtml(insp.id)}','${photoCount}')">+ Poze</button>`
+        ? `<button class="btn-add-more" onclick="event.stopPropagation();App.reopenForMorePhotos('${escHtml(insp.plate)}','${escHtml(insp.id)}','${photoCount}')">+ Poze</button>`
+        : '';
+      const clickable = insp.status === 'synced'
+        ? `onclick="App.viewInspection('${escHtml(insp.id)}','${escHtml(insp.plate)}','${escHtml(insp.datetime)}')" style="cursor:pointer"`
         : '';
       return `
-        <div class="inspection-item">
+        <div class="inspection-item" ${clickable}>
           <span class="inspection-plate">${escHtml(insp.plate)}</span>
           <span class="inspection-time">${time}</span>
           <span class="inspection-inspector">${escHtml(insp.inspector_name || '')}</span>
@@ -754,6 +756,14 @@ const App = (() => {
     Camera.stop();
     cameraRunning = false;
     cameraMode = 'none';
+
+    const insp = currentInspection();
+    // Dacă nu s-a făcut nicio poză, nu lăsa cazul deschis în activePlates
+    if (insp && insp.photos.length === 0) {
+      Storage.deleteActivePlate(insp.id).catch(() => {});
+      state.activePlates.delete(state.currentPlate);
+    }
+    state.currentPlate = null;
     goHome();
   }
 
@@ -912,6 +922,58 @@ const App = (() => {
     }
 
     show('screen-success');
+  }
+
+  /* ============================================================
+     Photo viewer — vizualizare fotografii inspecție finalizată
+     ============================================================ */
+  async function viewInspection(id, plate, datetime) {
+    const modal = document.getElementById('photo-viewer-modal');
+    const grid  = document.getElementById('pv-grid');
+    const title = document.getElementById('pv-plate');
+    const meta  = document.getElementById('pv-meta');
+
+    title.textContent = plate;
+    meta.textContent  = new Date(datetime).toLocaleString('ro-RO', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+    grid.innerHTML = '<div class="pv-loading">Se încarcă…</div>';
+    modal.classList.add('open');
+
+    try {
+      const data = await Sync.fetchInspection(id);
+      const photos = data.inspection?.photos || [];
+      if (photos.length === 0) {
+        grid.innerHTML = '<div class="pv-loading">Nicio fotografie.</div>';
+        return;
+      }
+      grid.innerHTML = photos.map((p, i) => `
+        <div class="pv-thumb" onclick="App.openLightbox('${escHtml(id)}','${escHtml(p.filename)}')">
+          <img src="/api/inspections/${escHtml(id)}/photo/${escHtml(p.filename)}" loading="lazy" alt="Etapa ${i+1}">
+          <div class="pv-label">Etapa ${i + 1}</div>
+        </div>
+      `).join('');
+    } catch {
+      grid.innerHTML = '<div class="pv-loading">Eroare la încărcare.</div>';
+    }
+  }
+
+  function closePhotoViewer() {
+    document.getElementById('photo-viewer-modal').classList.remove('open');
+    closeLightbox();
+  }
+
+  function openLightbox(inspId, filename) {
+    const lb  = document.getElementById('pv-lightbox');
+    const img = document.getElementById('pv-lightbox-img');
+    img.src = `/api/inspections/${inspId}/photo/${filename}`;
+    lb.classList.add('open');
+  }
+
+  function closeLightbox() {
+    const lb = document.getElementById('pv-lightbox');
+    if (lb) lb.classList.remove('open');
   }
 
   /* F3: Redeschide o inspecție finalizată pentru a adăuga poze suplimentare */
@@ -1105,6 +1167,10 @@ const App = (() => {
     startCapture,
     formatPlateInput,
     reopenForMorePhotos,
+    viewInspection,
+    closePhotoViewer,
+    openLightbox,
+    closeLightbox,
   };
 })();
 

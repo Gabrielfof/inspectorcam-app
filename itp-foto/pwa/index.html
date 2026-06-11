@@ -285,6 +285,25 @@
   </div>
 </div>
 
+<!-- Photo viewer modal -->
+<div id="photo-viewer-modal">
+  <div class="photo-viewer-card">
+    <div class="photo-viewer-header">
+      <div>
+        <div class="photo-viewer-plate" id="pv-plate"></div>
+        <div class="photo-viewer-meta" id="pv-meta"></div>
+      </div>
+      <button class="photo-viewer-close" onclick="App.closePhotoViewer()">×</button>
+    </div>
+    <div class="photo-viewer-grid" id="pv-grid"></div>
+  </div>
+</div>
+
+<!-- Lightbox foto mare -->
+<div id="pv-lightbox" onclick="App.closeLightbox()">
+  <img id="pv-lightbox-img" alt="">
+</div>
+
 <!-- Toast notification -->
 <div id="toast" class="toast"></div>
 

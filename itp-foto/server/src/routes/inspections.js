@@ -1,5 +1,7 @@
 'use strict';
 
+const path   = require('path');
+const fs     = require('fs');
 const { Router } = require('express');
 const { getDb } = require('../lib/database');
 
@@ -66,6 +68,26 @@ router.get('/:id', (req, res) => {
     res.json({ ok: true, inspection: insp });
   } catch (err) {
     res.status(500).json({ ok: false, eroare: 'Nu s-au putut încărca detaliile inspecției.' });
+  }
+});
+
+// GET /api/inspections/:id/photo/:filename — servește fișierul foto din folderul inspecției
+router.get('/:id/photo/:filename', (req, res) => {
+  try {
+    const db   = getDb();
+    const insp = db.prepare('SELECT folder_path FROM inspections WHERE id = ?').get(req.params.id);
+    if (!insp) return res.status(404).end();
+
+    // Securitate: prevenim path traversal
+    const filename = path.basename(req.params.filename);
+    const filePath = path.join(insp.folder_path, filename);
+
+    if (!fs.existsSync(filePath)) return res.status(404).end();
+
+    res.setHeader('Cache-Control', 'max-age=3600');
+    res.sendFile(filePath);
+  } catch (err) {
+    res.status(500).end();
   }
 });
 

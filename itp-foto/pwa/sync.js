@@ -26,6 +26,10 @@ const Sync = (() => {
     return data.inspections || [];
   }
 
+  async function fetchInspection(id) {
+    return api(`/api/inspections/${encodeURIComponent(id)}`);
+  }
+
   async function verifyPin(inspector_id, pin) {
     return api('/api/inspectors/verify-pin', {
       method:  'POST',
@@ -116,7 +120,7 @@ const Sync = (() => {
   }
 
   return {
-    fetchInspectors, fetchConfig, fetchTodayInspections, verifyPin,
+    fetchInspectors, fetchConfig, fetchTodayInspections, fetchInspection, verifyPin,
     uploadInspection, uploadAdditionalPhotos,
   };
 })();
