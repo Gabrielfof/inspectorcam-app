@@ -42,10 +42,10 @@ const Camera = (() => {
     return stream !== null && stream.active;
   }
 
-  // Dimensiune maximă: 1920×1080. Fotografiile mai mari se redimensionează.
-  // Aceasta reduce dramatic timpul de procesare pe telefoane cu cameră 4K.
-  const MAX_W = 1920;
-  const MAX_H = 1080;
+  // Rezoluție intenționat redusă — fotografiile trebuie să fie de calitate slabă,
+  // pixelate la zoom (cerință operațională ITP).
+  const MAX_W = 640;
+  const MAX_H = 480;
 
   function scaleDimensions(w, h) {
     const scale = Math.min(1, MAX_W / w, MAX_H / h);
@@ -57,9 +57,9 @@ const Camera = (() => {
       throw new Error('Camera nu este activă.');
     }
 
-    const vw = videoEl.videoWidth  || 1280;
-    const vh = videoEl.videoHeight || 960;
-    const [width, height] = scaleDimensions(Math.max(vw, 1280), Math.max(vh, 960));
+    const vw = videoEl.videoWidth  || 640;
+    const vh = videoEl.videoHeight || 480;
+    const [width, height] = scaleDimensions(vw, vh);
 
     const canvas = document.createElement('canvas');
     canvas.width  = width;
@@ -196,7 +196,7 @@ const Camera = (() => {
       canvas.toBlob(
         blob => blob ? resolve(blob) : reject(new Error('Eroare la convertirea imaginii.')),
         'image/jpeg',
-        0.80
+        0.35
       );
     });
   }
