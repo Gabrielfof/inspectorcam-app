@@ -342,6 +342,7 @@ async function browseFolder() {
     const folder = await ipcRenderer.invoke('choose-folder');
     if (folder) {
       document.getElementById('save-folder').value = folder;
+      await saveStation();
     }
   } catch (e) {
     showToast('Nu s-a putut deschide selectorul de folder.', 'err');
