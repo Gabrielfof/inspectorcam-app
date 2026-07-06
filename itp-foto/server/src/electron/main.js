@@ -394,7 +394,17 @@ ipcMain.handle('choose-folder', async () => {
 });
 
 ipcMain.on('open-itp-folder', () => {
-  shell.openPath(path.join(os.homedir(), 'InspectorCam'));
+  try {
+    const { getDb } = require('../lib/database');
+    const row = getDb().prepare("SELECT value FROM config WHERE key = 'save_folder'").get();
+    const folderPath = (row && row.value) ? row.value : path.join(os.homedir(), 'InspectorCam');
+    fs.mkdirSync(folderPath, { recursive: true });
+    shell.openPath(folderPath);
+  } catch {
+    const fallback = path.join(os.homedir(), 'InspectorCam');
+    fs.mkdirSync(fallback, { recursive: true });
+    shell.openPath(fallback);
+  }
 });
 
 ipcMain.on('open-settings', (event, tab) => openSettings(tab));
