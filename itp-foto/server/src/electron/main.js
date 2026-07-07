@@ -287,7 +287,7 @@ app.on('ready', () => {
 function createLicenseWindow() {
   licenseWindow = new BrowserWindow({
     width: 480,
-    height: 400,
+    height: 520,
     resizable: false,
     title: 'InspectorCam — Activare',
     backgroundColor: '#0B0E15',
