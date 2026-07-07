@@ -45,9 +45,21 @@ function storeLicense(data) {
   fs.writeFileSync(licenseFilePath(), JSON.stringify(data, null, 2), 'utf8');
 }
 
+function getMachineId() {
+  const filePath = path.join(app.getPath('userData'), 'machine-id.json');
+  try {
+    if (fs.existsSync(filePath)) return JSON.parse(fs.readFileSync(filePath, 'utf8')).id;
+  } catch {}
+  const id = require('crypto').randomUUID();
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify({ id }), 'utf8');
+  return id;
+}
+
 function verifyOnline(key) {
   return new Promise((resolve, reject) => {
-    const url = `${LICENSE_SERVER}/api/verify?key=${encodeURIComponent(key)}`;
+    const machineId = getMachineId();
+    const url = `${LICENSE_SERVER}/api/verify?key=${encodeURIComponent(key)}&machine_id=${encodeURIComponent(machineId)}`;
     https.get(url, res => {
       let body = '';
       res.on('data', d => body += d);
