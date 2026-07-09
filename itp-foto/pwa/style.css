@@ -1012,6 +1012,18 @@ html, body {
   box-shadow: 0 4px 20px rgba(255, 95, 31, 0.45);
 }
 
+.step-finalize-btn {
+  margin-top: 20px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.55);
+  font-size: 0.82rem;
+  padding: 8px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.step-finalize-btn.hidden { display: none; }
+
 .note-indicator {
   position: fixed;
   top: 12px;

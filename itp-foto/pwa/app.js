@@ -505,6 +505,15 @@ const App = (() => {
   function showStepInstruction(index, _total, label) {
     document.getElementById('step-instruction-label').textContent = label;
     document.getElementById('step-instruction').classList.remove('hidden');
+    const insp = currentInspection();
+    const finalizeBtn = document.getElementById('step-finalize-btn');
+    if (finalizeBtn) {
+      if (insp && insp.photos.length > 0) {
+        finalizeBtn.classList.remove('hidden');
+      } else {
+        finalizeBtn.classList.add('hidden');
+      }
+    }
   }
 
   function hideStepInstruction() {
