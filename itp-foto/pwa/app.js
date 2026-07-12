@@ -291,7 +291,7 @@ const App = (() => {
           <span class="chip-resume">Continuă →</span>
         </div>
       `;
-      chip.querySelector('.chip-resume').addEventListener('click', () => resumePlate(plate));
+      chip.addEventListener('click', () => resumePlate(plate));
       chip.querySelector('.chip-cancel').addEventListener('click', (e) => {
         e.stopPropagation();
         cancelCase(plate);
@@ -747,6 +747,20 @@ const App = (() => {
     renderActivePlates();
   }
 
+  async function cancelCurrentCase() {
+    const plate = state.currentPlate;
+    if (!plate) return;
+    if (!confirm(`Anulezi cazul ${plate}? Pozele făcute vor fi șterse.`)) return;
+    Camera.stop();
+    cameraRunning = false;
+    cameraMode = 'none';
+    const insp = state.activePlates.get(plate);
+    if (insp) await Storage.deleteActivePlate(insp.id).catch(() => {});
+    state.activePlates.delete(plate);
+    state.currentPlate = null;
+    goHome();
+  }
+
   function finalizeEarly() {
     const insp = currentInspection();
     if (insp.photos.length === 0) {
@@ -819,7 +833,7 @@ const App = (() => {
       grid.appendChild(div);
     });
 
-    const countEl = document.querySelector('#screen-confirm .form-label');
+    const countEl = document.getElementById('photos-count-label');
     if (countEl) countEl.textContent = `Fotografii (${insp.photos.length})`;
 
     show('screen-confirm');
@@ -1189,6 +1203,7 @@ const App = (() => {
     retryConnection,
     finalizeEarly,
     cancelCase,
+    cancelCurrentCase,
     startCapture,
     formatPlateInput,
     reopenForMorePhotos,
