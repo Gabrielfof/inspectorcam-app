@@ -573,6 +573,7 @@ const App = (() => {
         const blob = await Camera.processImportedFile(file, buildWatermark());
         await savePhoto({ step: step.id, blob, source: 'camera' }, insp);
         showPreview(blob);
+        renderPhotoStrip();
       } catch (err) {
         toast(err.message, 'error');
       }
@@ -589,6 +590,7 @@ const App = (() => {
       const blob = await Camera.capture(buildWatermark());
       await savePhoto({ step: step.id, blob, source: 'camera' }, insp);
       showPreview(blob);
+      renderPhotoStrip();
     } catch (err) {
       toast(err.message, 'error');
     }
@@ -613,6 +615,7 @@ const App = (() => {
         const blob = await Camera.processImportedFile(file, buildWatermark(true));
         await savePhoto({ step: step.id, blob, source: 'import' }, insp);
         showPreview(blob);
+        renderPhotoStrip();
         toast('Fotografie importată și marcată.', 'success');
       } catch (err) {
         toast(err.message, 'error');
