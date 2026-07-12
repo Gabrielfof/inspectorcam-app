@@ -347,11 +347,26 @@ html, body {
   color: var(--text-muted);
 }
 
+.chip-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
 .chip-resume {
   font-family: var(--font-head);
   font-size: 1rem;
   font-weight: 700;
   color: var(--accent);
+}
+
+.chip-cancel {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-new-plate {

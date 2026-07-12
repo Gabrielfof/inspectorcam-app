@@ -286,9 +286,16 @@ const App = (() => {
           <span class="chip-plate">${escHtml(plate)}</span>
           <span class="chip-photos">${count} ${count === 1 ? 'fotografie' : 'fotografii'}</span>
         </div>
-        <span class="chip-resume">Continuă →</span>
+        <div class="chip-actions">
+          <span class="chip-cancel">Anulează</span>
+          <span class="chip-resume">Continuă →</span>
+        </div>
       `;
-      chip.addEventListener('click', () => resumePlate(plate));
+      chip.querySelector('.chip-resume').addEventListener('click', () => resumePlate(plate));
+      chip.querySelector('.chip-cancel').addEventListener('click', (e) => {
+        e.stopPropagation();
+        cancelCase(plate);
+      });
       list.appendChild(chip);
     }
   }
@@ -732,6 +739,14 @@ const App = (() => {
     }
   }
 
+  async function cancelCase(plate) {
+    if (!confirm(`Anulezi cazul ${plate}? Pozele făcute vor fi șterse.`)) return;
+    const insp = state.activePlates.get(plate);
+    if (insp) await Storage.deleteActivePlate(insp.id).catch(() => {});
+    state.activePlates.delete(plate);
+    renderActivePlates();
+  }
+
   function finalizeEarly() {
     const insp = currentInspection();
     if (insp.photos.length === 0) {
@@ -1173,6 +1188,7 @@ const App = (() => {
     showSuccess,
     retryConnection,
     finalizeEarly,
+    cancelCase,
     startCapture,
     formatPlateInput,
     reopenForMorePhotos,
