@@ -225,6 +225,9 @@ const App = (() => {
     showLogin();
   }
 
+  /* IDs-urile inspecțiilor ascunse local în sesiunea curentă */
+  const hiddenInspectionIds = new Set();
+
   /* ============================================================
      Home
      ============================================================ */
@@ -262,12 +265,15 @@ const App = (() => {
     const allItems = [
       ...serverInspections.map(i => ({ ...i, status: 'synced' })),
       ...pendingToday.map(p => ({
+        id:             p.id,
         plate:          p.plate,
         datetime:       p.datetime,
         inspector_name: state.inspector.name,
         status:         'pending',
       })),
-    ].sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+    ]
+      .filter(i => !hiddenInspectionIds.has(i.id))
+      .sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
 
     renderTodayList(allItems);
   }
@@ -287,11 +293,16 @@ const App = (() => {
           <span class="chip-photos">${count} ${count === 1 ? 'fotografie' : 'fotografii'}</span>
         </div>
         <div class="chip-actions">
-          <span class="chip-cancel">Anulează</span>
           <span class="chip-resume">Continuă →</span>
+          <span class="chip-edit">Modifică nr.</span>
+          <span class="chip-cancel">Anulează</span>
         </div>
       `;
       chip.addEventListener('click', () => resumePlate(plate));
+      chip.querySelector('.chip-edit').addEventListener('click', (e) => {
+        e.stopPropagation();
+        editPlate(plate);
+      });
       chip.querySelector('.chip-cancel').addEventListener('click', (e) => {
         e.stopPropagation();
         cancelCase(plate);
@@ -321,12 +332,13 @@ const App = (() => {
       const clickable = insp.status === 'synced'
         ? `onclick="App.viewInspection('${escHtml(insp.id)}','${escHtml(insp.plate)}','${escHtml(insp.datetime)}')" style="cursor:pointer"`
         : '';
+      const deleteBtn = `<button class="btn-delete-inspection" onclick="event.stopPropagation();App.deleteInspection('${escHtml(insp.id || '')}','${insp.status}')" title="Șterge">✕</button>`;
       return `
         <div class="inspection-item" ${clickable}>
           <span class="inspection-plate">${escHtml(insp.plate)}</span>
           <span class="inspection-time">${time}</span>
           <span class="inspection-inspector">${escHtml(insp.inspector_name || '')}</span>
-          ${badge}${addBtn}
+          ${badge}${deleteBtn}${addBtn}
         </div>`;
     }).join('');
   }
@@ -354,15 +366,27 @@ const App = (() => {
   }
 
   /* Formatare automată număr de înmatriculare:
-     BV33ABG → BV 33 ABG  |  B123XYZ → B 123 XYZ  */
+     BV33ABG → BV-33-ABG  |  B123XYZ → B-123-XYZ
+     MAI01ABC → MAI-01-ABC  |  A12345 → A-12345 (armată) */
+  const SPECIAL_PREFIXES_3 = ['MAI', 'GUV', 'DEP', 'SNT', 'SRI', 'POL'];
+
   function formatPlate(raw) {
     const s = raw.replace(/\s+/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (s.length < 2) return s;
 
     let county, rest;
-    // București: B urmat direct de cifră
-    if (s[0] === 'B' && s.length > 1 && /\d/.test(s[1])) {
+    const threePrefix = SPECIAL_PREFIXES_3.find(p => s.startsWith(p));
+    if (threePrefix) {
+      // Prefix special de 3 litere: MAI, GUV, DEP etc.
+      county = threePrefix;
+      rest   = s.slice(3);
+    } else if (s[0] === 'B' && s.length > 1 && /\d/.test(s[1])) {
+      // București: B urmat direct de cifră
       county = 'B';
+      rest   = s.slice(1);
+    } else if (s[0] === 'A' && s.length > 1 && /\d/.test(s[1])) {
+      // Armată: A urmat direct de cifre
+      county = 'A';
       rest   = s.slice(1);
     } else {
       county = s.slice(0, 2);
@@ -762,6 +786,35 @@ const App = (() => {
     state.activePlates.delete(plate);
     state.currentPlate = null;
     goHome();
+  }
+
+  async function deleteInspection(id, status) {
+    if (status === 'pending') {
+      if (!confirm('Ștergi această inspecție din coada de trimitere? Nu va mai fi trimisă la calculator.')) return;
+      await Storage.deletePending(id).catch(() => {});
+    } else {
+      if (!confirm('Ascunzi această inspecție din lista de azi?')) return;
+      if (id) hiddenInspectionIds.add(id);
+    }
+    goHome();
+  }
+
+  async function editPlate(oldPlate) {
+    const raw = prompt(`Modifică numărul de înmatriculare:\n(${oldPlate})`, oldPlate);
+    if (!raw || !raw.trim()) return;
+    const newPlate = formatPlate(raw.trim());
+    if (!newPlate || newPlate === oldPlate) return;
+    if (state.activePlates.has(newPlate)) {
+      toast('Există deja un caz deschis cu acest număr.', 'error');
+      return;
+    }
+    const insp = state.activePlates.get(oldPlate);
+    if (!insp) return;
+    insp.plate = newPlate;
+    state.activePlates.delete(oldPlate);
+    state.activePlates.set(newPlate, insp);
+    await Storage.saveActivePlate(insp).catch(() => {});
+    renderActivePlates();
   }
 
   function finalizeEarly() {
@@ -1207,6 +1260,8 @@ const App = (() => {
     finalizeEarly,
     cancelCase,
     cancelCurrentCase,
+    deleteInspection,
+    editPlate,
     startCapture,
     formatPlateInput,
     reopenForMorePhotos,

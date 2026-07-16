@@ -361,6 +361,14 @@ html, body {
   color: var(--accent);
 }
 
+.chip-edit {
+  font-size: 0.72rem;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .chip-cancel {
   font-size: 0.72rem;
   color: var(--text-muted);
@@ -517,6 +525,20 @@ html, body {
   transition: background 0.2s;
 }
 .btn-add-more:active { background: rgba(255,95,31,0.2); }
+
+.btn-delete-inspection {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-delete-inspection:active { color: var(--danger, #e53e3e); }
 
 .no-inspections {
   color: var(--text-muted);
