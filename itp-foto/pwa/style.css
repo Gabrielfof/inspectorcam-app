@@ -351,7 +351,7 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 6px;
+  gap: 8px;
 }
 
 .chip-resume {
@@ -362,17 +362,21 @@ html, body {
 }
 
 .chip-edit {
-  font-size: 0.72rem;
+  font-family: var(--font-head);
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--accent);
-  text-decoration: underline;
+  text-decoration: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
 .chip-cancel {
-  font-size: 0.72rem;
+  font-family: var(--font-head);
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--text-muted);
-  text-decoration: underline;
+  text-decoration: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -469,10 +473,11 @@ html, body {
 }
 
 .inspection-item {
+  position: relative;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 14px 16px;
+  padding: 14px 40px 14px 16px;
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-rows: auto auto auto;
@@ -502,9 +507,11 @@ html, body {
 .sync-badge {
   font-size: 0.72rem;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 20px;
-  text-align: right;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .sync-badge.synced { background: rgba(0,217,126,0.15); color: var(--success); }
 .sync-badge.pending { background: rgba(255,190,11,0.15); color: var(--warning); }
@@ -527,18 +534,21 @@ html, body {
 .btn-add-more:active { background: rgba(255,95,31,0.2); }
 
 .btn-delete-inspection {
+  position: absolute;
+  top: 10px;
+  right: 10px;
   background: transparent;
   border: none;
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 4px 6px;
   border-radius: 4px;
   line-height: 1;
   transition: color 0.15s;
   -webkit-tap-highlight-color: transparent;
 }
-.btn-delete-inspection:active { color: var(--danger, #e53e3e); }
+.btn-delete-inspection:active { color: #e53e3e; }
 
 .no-inspections {
   color: var(--text-muted);
