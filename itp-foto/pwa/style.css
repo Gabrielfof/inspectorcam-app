@@ -602,7 +602,7 @@ html, body {
 
 .plate-title {
   font-family: var(--font-head);
-  font-size: 2.6rem;
+  font-size: clamp(1.8rem, 7vw, 2.6rem);
   font-weight: 800;
   line-height: 1.1;
   margin-bottom: 32px;
@@ -1248,12 +1248,16 @@ html, body {
 .success-icon {
   width: 96px;
   height: 96px;
+  min-width: 96px;
+  min-height: 96px;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   background: rgba(0,217,126,0.15);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 48px;
+  flex-shrink: 0;
+  color: var(--success);
   margin-bottom: 24px;
   border: 2px solid var(--success);
 }

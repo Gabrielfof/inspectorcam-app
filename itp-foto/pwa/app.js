@@ -993,13 +993,16 @@ const App = (() => {
     document.getElementById('success-plate').textContent = inspection.plate;
     document.getElementById('success-photos').textContent = (inspection.photos_saved ?? inspection.photos?.length ?? '—') + ' fotografii';
 
+    const svgCheck = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="46" height="46"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const svgDown  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="46" height="46"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`;
+
     if (isOffline) {
-      document.getElementById('success-icon').textContent     = '↓';
+      document.getElementById('success-icon').innerHTML       = svgDown;
       document.getElementById('success-title').textContent    = 'Salvat local';
       document.getElementById('success-subtitle').textContent = 'Serverul nu e disponibil. Se va sincroniza automat la reconectare.';
       document.getElementById('success-folder').textContent   = '— (va fi creat la sincronizare)';
     } else {
-      document.getElementById('success-icon').textContent     = '✓';
+      document.getElementById('success-icon').innerHTML       = svgCheck;
       document.getElementById('success-title').textContent    = 'Salvat!';
       document.getElementById('success-subtitle').textContent = 'Inspecția a fost trimisă la calculator.';
       document.getElementById('success-folder').textContent   = inspection.folder_path || '—';
