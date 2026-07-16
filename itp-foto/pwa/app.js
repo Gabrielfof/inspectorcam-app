@@ -334,9 +334,8 @@ const App = (() => {
       const deleteBtn = `<button class="btn-delete-inspection" onclick="event.stopPropagation();App.deleteInspection('${escHtml(insp.id || '')}','${insp.status}')" title="Șterge">✕</button>`;
       return `
         <div class="inspection-item" ${clickable}>
-          ${deleteBtn}
           <span class="inspection-plate">${escHtml(insp.plate)}</span>
-          <span class="inspection-time">${time}</span>
+          <div class="inspection-time-row">${deleteBtn}<span class="inspection-time">${time}</span></div>
           <span class="inspection-inspector">${escHtml(insp.inspector_name || '')}</span>
           ${badge}${addBtn}
         </div>`;
