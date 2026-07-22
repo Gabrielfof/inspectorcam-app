@@ -42,8 +42,8 @@ const Camera = (() => {
     return stream !== null && stream.active;
   }
 
-  const MAX_W = 1920;
-  const MAX_H = 1440;
+  const MAX_W = 1280;
+  const MAX_H = 960;
 
   function scaleDimensions(w, h) {
     const scale = Math.min(1, MAX_W / w, MAX_H / h);
@@ -191,7 +191,7 @@ const Camera = (() => {
       canvas.toBlob(
         blob => blob ? resolve(blob) : reject(new Error('Eroare la convertirea imaginii.')),
         'image/jpeg',
-        0.88
+        0.72
       );
     });
   }
