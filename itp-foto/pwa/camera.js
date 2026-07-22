@@ -42,10 +42,8 @@ const Camera = (() => {
     return stream !== null && stream.active;
   }
 
-  // Rezoluție intenționat redusă — fotografiile trebuie să fie de calitate slabă,
-  // pixelate la zoom (cerință operațională ITP).
-  const MAX_W = 960;
-  const MAX_H = 720;
+  const MAX_W = 1920;
+  const MAX_H = 1440;
 
   function scaleDimensions(w, h) {
     const scale = Math.min(1, MAX_W / w, MAX_H / h);
@@ -78,10 +76,7 @@ const Camera = (() => {
       const url = URL.createObjectURL(file);
 
       img.onload = () => {
-        const [width, height] = scaleDimensions(
-          Math.max(img.naturalWidth,  1280),
-          Math.max(img.naturalHeight, 960)
-        );
+        const [width, height] = scaleDimensions(img.naturalWidth, img.naturalHeight);
 
         const canvas = document.createElement('canvas');
         canvas.width  = width;
@@ -196,7 +191,7 @@ const Camera = (() => {
       canvas.toBlob(
         blob => blob ? resolve(blob) : reject(new Error('Eroare la convertirea imaginii.')),
         'image/jpeg',
-        0.55
+        0.88
       );
     });
   }
