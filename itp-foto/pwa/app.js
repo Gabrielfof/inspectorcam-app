@@ -522,7 +522,11 @@ const App = (() => {
         (idx === insp.currentStep ? ' strip-active' : '') +
         (photo ? '' : ' strip-empty');
 
-      if (photo) {
+      if (photo && photo.uploaded) {
+        thumb.classList.add('strip-uploaded');
+        thumb.textContent = '✓';
+        thumb.addEventListener('click', () => { if (idx !== insp.currentStep) startStep(idx); });
+      } else if (photo) {
         const img = document.createElement('img');
         img.src = photo.dataUrl || URL.createObjectURL(photo.blob);
         img.alt = step.label;
@@ -542,7 +546,7 @@ const App = (() => {
     const insp = currentInspection();
     const finalizeBtn = document.getElementById('step-finalize-btn');
     if (finalizeBtn) {
-      if (insp && insp.photos.length > 0) {
+      if (insp && insp.photos.filter(p => !p.uploaded).length > 0) {
         finalizeBtn.classList.remove('hidden');
       } else {
         finalizeBtn.classList.add('hidden');
@@ -822,7 +826,7 @@ const App = (() => {
 
   function finalizeEarly() {
     const insp = currentInspection();
-    if (insp.photos.length === 0) {
+    if (insp.photos.filter(p => !p.uploaded).length === 0) {
       toast('Faceți cel puțin o fotografie înainte de a finaliza.', 'error');
       return;
     }
@@ -855,8 +859,8 @@ const App = (() => {
     cameraMode = 'none';
 
     const insp = currentInspection();
-    // Dacă nu s-a făcut nicio poză, nu lăsa cazul deschis în activePlates
-    if (insp && insp.photos.length === 0) {
+    // Dacă nu s-a făcut nicio poză reală (nu placeholder), nu lăsa cazul deschis
+    if (insp && insp.photos.filter(p => !p.uploaded).length === 0) {
       Storage.deleteActivePlate(insp.id).catch(() => {});
       state.activePlates.delete(state.currentPlate);
     }
@@ -879,7 +883,8 @@ const App = (() => {
     const grid = document.getElementById('photos-grid');
     grid.innerHTML = '';
 
-    insp.photos.forEach(photo => {
+    const realPhotos = insp.photos.filter(p => !p.uploaded);
+    realPhotos.forEach(photo => {
       const stepIdx = insp.activeSteps.findIndex(s => s.id === photo.step);
       const label = stepIdx >= 0 ? `Etapa ${stepIdx + 1}` : photo.step;
       const url = photo.dataUrl || URL.createObjectURL(photo.blob);
@@ -893,7 +898,7 @@ const App = (() => {
     });
 
     const countEl = document.getElementById('photos-count-label');
-    if (countEl) countEl.textContent = `Fotografii (${insp.photos.length})`;
+    if (countEl) countEl.textContent = `Fotografii (${realPhotos.length})`;
 
     show('screen-confirm');
   }
@@ -922,7 +927,7 @@ const App = (() => {
       datetime:     new Date().toISOString(),
       notes:        insp.notes,
       device_id:    getDeviceId(),
-      photos:       insp.photos.map(p => ({
+      photos:       insp.photos.filter(p => !p.uploaded).map(p => ({
         step:      p.step,
         blob:      p.blob,
         dataUrl:   p.dataUrl   || null,
@@ -1079,7 +1084,9 @@ const App = (() => {
   /* F3: Redeschide o inspecție finalizată pentru a adăuga poze suplimentare */
   function reopenForMorePhotos(plate, inspectionId, photoCount) {
     if (!plate) return;
-    const startIdx = Math.min(parseInt(photoCount) || 0, getActiveSteps().length - 1);
+    const activeSteps = getActiveSteps();
+    const prevCount   = Math.min(parseInt(photoCount) || 0, activeSteps.length);
+    const startIdx    = Math.min(prevCount, activeSteps.length - 1);
 
     if (state.activePlates.has(plate)) {
       const insp = state.activePlates.get(plate);
@@ -1088,13 +1095,21 @@ const App = (() => {
       return;
     }
 
+    // Placeholder-e pentru pozele deja încărcate pe server — le afișăm în strip
+    const prevPhotos = activeSteps.slice(0, prevCount).map(step => ({
+      step:     step.id,
+      uploaded: true,
+      dataUrl:  null,
+      blob:     null,
+    }));
+
     const insp = {
       id:                   generateId(),
       plate:                plate,
       notes:                '',
-      photos:               [],
+      photos:               prevPhotos,
       currentStep:          startIdx,
-      activeSteps:          getActiveSteps(),
+      activeSteps:          activeSteps,
       appendToInspectionId: inspectionId || null,
     };
     state.activePlates.set(plate, insp);
