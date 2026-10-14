@@ -71,32 +71,26 @@ const Camera = (() => {
   }
 
   async function processImportedFile(file, watermarkData) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const url = URL.createObjectURL(file);
+    try {
+      // createImageBitmap cu imageOrientation: 'from-image' aplică automat rotația EXIF
+      // — fix pentru fotografii landscape de pe iOS/Android
+      const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+        .catch(() => createImageBitmap(file)); // fallback pentru browsere mai vechi
 
-      img.onload = () => {
-        const [width, height] = scaleDimensions(img.naturalWidth, img.naturalHeight);
+      const [width, height] = scaleDimensions(bitmap.width, bitmap.height);
 
-        const canvas = document.createElement('canvas');
-        canvas.width  = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
+      const canvas = document.createElement('canvas');
+      canvas.width  = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0, width, height);
+      bitmap.close();
 
-        applyWatermark(ctx, width, height, watermarkData);
-        URL.revokeObjectURL(url);
-
-        canvasToBlob(canvas).then(resolve).catch(reject);
-      };
-
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('Nu s-a putut procesa imaginea selectată.'));
-      };
-
-      img.src = url;
-    });
+      applyWatermark(ctx, width, height, watermarkData);
+      return canvasToBlob(canvas);
+    } catch {
+      throw new Error('Nu s-a putut procesa imaginea selectată.');
+    }
   }
 
   function applyWatermark(ctx, width, height, {

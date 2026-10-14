@@ -10,6 +10,10 @@ const ALL_STEPS = [
   { id: 'odometru',      label: 'Indicația odometrului',           hint: 'Fotografiați afișajul cu kilometrii parcurși' },
   { id: 'interior',      label: 'Amenajare interioară',            hint: 'Fotografiați interiorul vehiculului', configKey: 'enable_interior_photo' },
   { id: 'final',         label: 'Ecuson aplicat pe plăcuță',       hint: 'Fotografiați plăcuța după aplicarea ecusonului ITP' },
+  { id: 'extra-1',       label: 'Fotografie suplimentară 1',       hint: 'Fotografiați detalii suplimentare ale vehiculului', configKey: 'enable_extra_1' },
+  { id: 'extra-2',       label: 'Fotografie suplimentară 2',       hint: 'Fotografiați detalii suplimentare ale vehiculului', configKey: 'enable_extra_2' },
+  { id: 'extra-3',       label: 'Fotografie suplimentară 3',       hint: 'Fotografiați detalii suplimentare ale vehiculului', configKey: 'enable_extra_3' },
+  { id: 'extra-4',       label: 'Fotografie suplimentară 4',       hint: 'Fotografiați detalii suplimentare ale vehiculului', configKey: 'enable_extra_4' },
 ];
 
 /* ============================================================
