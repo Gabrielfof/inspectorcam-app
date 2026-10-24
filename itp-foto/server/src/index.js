@@ -50,7 +50,11 @@ app.get('/', (req, res) => {
 // Serve PWA static — JS/CSS/HTML fără cache, iconuri pot fi cache-uite
 app.use(express.static(PWA_PATH, {
   setHeaders(res, filePath) {
-    if (
+    // vendor/ — biblioteci mari cu versiunea în nume (ex. opencv-4.9.0.js, ~10 MB):
+    // cache permanent, telefonul le descarcă o singură dată
+    if (filePath.includes(`${path.sep}vendor${path.sep}`)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (
       filePath.endsWith('.js') ||
       filePath.endsWith('.css') ||
       filePath.endsWith('.html')

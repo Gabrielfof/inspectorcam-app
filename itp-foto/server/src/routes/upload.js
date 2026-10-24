@@ -16,7 +16,7 @@ const upload = multer({
   storage,
   limits: {
     fileSize: 20 * 1024 * 1024, // 20 MB per fișier
-    files: 10,
+    files: 30, // 15 pași + rezervă pentru custom_steps
   },
   fileFilter: (_req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) {

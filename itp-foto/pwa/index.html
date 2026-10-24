@@ -146,6 +146,9 @@
   <!-- Capture controls -->
   <div class="camera-bottom hidden" id="capture-controls"></div>
 
+  <!-- Decupare document: apare peste previzualizare când avem poza originală -->
+  <button class="crop-btn hidden" id="crop-btn" onclick="App.openCropEditor()">✂ Decupează document</button>
+
   <!-- Preview controls (shown after capture) -->
   <div class="camera-bottom hidden" id="preview-controls">
     <button class="btn-retake" onclick="App.retakePhoto()">Refă</button>
@@ -250,6 +253,22 @@
 <!-- ============================================================
      NOTE MODAL
      ============================================================ -->
+<!-- ============================================================
+     DECUPARE DOCUMENT — ajustarea colțurilor
+     ============================================================ -->
+<div id="crop-editor" role="dialog" aria-label="Ajustează decupajul documentului">
+  <div class="crop-top">
+    <button class="crop-top-btn" onclick="App.closeCropEditor()">Anulează</button>
+    <div class="crop-title">Trageți de colțuri</div>
+    <button class="crop-top-btn" onclick="App.resetCrop()">Resetează</button>
+  </div>
+  <div class="crop-stage"><canvas id="crop-canvas"></canvas></div>
+  <div class="crop-actions">
+    <button class="btn-retake" onclick="App.removeCrop()">Fără decupaj</button>
+    <button class="btn-next-step" onclick="App.applyCrop()">Aplică decupajul</button>
+  </div>
+</div>
+
 <div id="note-modal">
   <div class="note-modal-card">
     <div class="note-modal-title">Adaugă notiță</div>
@@ -313,6 +332,8 @@
 <script src="/storage.js"></script>
 <script src="/sync.js"></script>
 <script src="/camera.js"></script>
+<script src="/docscan-core.js"></script>
+<script src="/docscan.js"></script>
 <script src="/app.js"></script>
 
 </body>

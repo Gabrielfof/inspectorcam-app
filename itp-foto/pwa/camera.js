@@ -42,15 +42,17 @@ const Camera = (() => {
     return stream !== null && stream.active;
   }
 
-  const MAX_W = 1600;
-  const MAX_H = 1200;
+  const MAX_LONG  = 1600;
+  const MAX_SHORT = 1200;
 
+  // Latura lungă max 1600, cea scurtă max 1200 — portret și landscape au aceeași calitate
   function scaleDimensions(w, h) {
-    const scale = Math.min(1, MAX_W / w, MAX_H / h);
+    const scale = Math.min(1, MAX_LONG / Math.max(w, h), MAX_SHORT / Math.min(w, h));
     return [Math.round(w * scale), Math.round(h * scale)];
   }
 
-  async function capture(watermarkData) {
+  /* Cadrul curent din stream, scalat, fără watermark */
+  function captureCanvas() {
     if (!videoEl || !isActive()) {
       throw new Error('Camera nu este activă.');
     }
@@ -62,15 +64,12 @@ const Camera = (() => {
     const canvas = document.createElement('canvas');
     canvas.width  = width;
     canvas.height = height;
-    const ctx = canvas.getContext('2d');
-
-    ctx.drawImage(videoEl, 0, 0, width, height);
-    applyWatermark(ctx, width, height, watermarkData);
-
-    return canvasToBlob(canvas);
+    canvas.getContext('2d').drawImage(videoEl, 0, 0, width, height);
+    return canvas;
   }
 
-  async function processImportedFile(file, watermarkData) {
+  /* Fișier/blob → canvas scalat, cu orientarea EXIF aplicată, fără watermark */
+  async function fileToCanvas(file) {
     try {
       // createImageBitmap cu imageOrientation: 'from-image' aplică automat rotația EXIF
       // — fix pentru fotografii landscape de pe iOS/Android
@@ -82,15 +81,23 @@ const Camera = (() => {
       const canvas = document.createElement('canvas');
       canvas.width  = width;
       canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(bitmap, 0, 0, width, height);
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, width, height);
       bitmap.close();
-
-      applyWatermark(ctx, width, height, watermarkData);
-      return canvasToBlob(canvas);
+      return canvas;
     } catch {
       throw new Error('Nu s-a putut procesa imaginea selectată.');
     }
+  }
+
+  /* Aplică watermark-ul pe o copie a canvas-ului și returnează JPEG-ul final */
+  function finalize(canvas, watermarkData) {
+    const out = document.createElement('canvas');
+    out.width  = canvas.width;
+    out.height = canvas.height;
+    const ctx = out.getContext('2d');
+    ctx.drawImage(canvas, 0, 0);
+    applyWatermark(ctx, out.width, out.height, watermarkData);
+    return canvasToBlob(out);
   }
 
   function applyWatermark(ctx, width, height, {
@@ -190,5 +197,8 @@ const Camera = (() => {
     });
   }
 
-  return { start, stop, isActive, capture, processImportedFile, applyNote };
+  return {
+    start, stop, isActive, applyNote,
+    captureCanvas, fileToCanvas, finalize, canvasToBlob,
+  };
 })();

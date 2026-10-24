@@ -14,6 +14,11 @@ const ALL_STEPS = [
   { id: 'extra-2',       label: 'Fotografie suplimentară 2',       hint: 'Fotografiați detalii suplimentare ale vehiculului', configKey: 'enable_extra_2' },
   { id: 'extra-3',       label: 'Fotografie suplimentară 3',       hint: 'Fotografiați detalii suplimentare ale vehiculului', configKey: 'enable_extra_3' },
   { id: 'extra-4',       label: 'Fotografie suplimentară 4',       hint: 'Fotografiați detalii suplimentare ale vehiculului', configKey: 'enable_extra_4' },
+  { id: 'extra-5',       label: 'Fotografie suplimentară 5',       hint: 'Fotografiați detalii suplimentare ale vehiculului', configKey: 'enable_extra_5' },
+  { id: 'extra-6',       label: 'Fotografie suplimentară 6',       hint: 'Fotografiați detalii suplimentare ale vehiculului', configKey: 'enable_extra_6' },
+  { id: 'extra-7',       label: 'Fotografie suplimentară 7',       hint: 'Fotografiați detalii suplimentare ale vehiculului', configKey: 'enable_extra_7' },
+  { id: 'extra-8',       label: 'Fotografie suplimentară 8',       hint: 'Fotografiați detalii suplimentare ale vehiculului', configKey: 'enable_extra_8' },
+  { id: 'extra-9',       label: 'Fotografie suplimentară 9',       hint: 'Fotografiați detalii suplimentare ale vehiculului', configKey: 'enable_extra_9' },
 ];
 
 /* ============================================================
@@ -31,6 +36,9 @@ const App = (() => {
 
   let cameraRunning = false;
   let cameraMode = 'none'; // 'stream' | 'fileinput'
+
+  // Cât așteptăm după OpenCV la o poză, dacă încă se încarcă (prima utilizare)
+  const DOCSCAN_WAIT_MS = 5000;
 
   /* Helper: inspecția curentă (placa activă în cameră) */
   function currentInspection() {
@@ -51,6 +59,7 @@ const App = (() => {
      ============================================================ */
   async function init() {
     show('screen-loading');
+    initCropEditor();
 
     // Restore session
     try {
@@ -243,6 +252,7 @@ const App = (() => {
     document.getElementById('home-inspector-name').textContent = state.inspector.name;
     renderActivePlates();
     show('screen-home');
+    preloadDocScan();
 
     const today = new Date().toISOString().slice(0, 10);
 
@@ -417,16 +427,15 @@ const App = (() => {
       return;
     }
 
-    // Verificăm dacă a fost trimisă azi → adăugăm la inspecția existentă
-    let appendToInspectionId = null;
-    let startStep0 = 0;
+    // Verificăm dacă a fost trimisă azi → adăugăm la inspecția existentă,
+    // la fel ca la „+ Poze” (etapa e limitată la numărul de pași existenți)
     try {
       const today     = new Date().toISOString().slice(0, 10);
       const completed = await Storage.getCompletedPlates();
       const match     = completed.find(c => c.plate === raw && c.date === today);
       if (match) {
-        appendToInspectionId = match.id;
-        startStep0           = match.photos_saved || 0;
+        reopenForMorePhotos(raw, match.id, match.photos_saved || 0);
+        return;
       }
     } catch { /* ignorăm */ }
 
@@ -435,14 +444,14 @@ const App = (() => {
       plate:                raw,
       notes:                '',
       photos:               [],
-      currentStep:          startStep0,
+      currentStep:          0,
       activeSteps:          getActiveSteps(),
-      appendToInspectionId,
+      appendToInspectionId: null,
     };
     state.activePlates.set(raw, insp);
     state.currentPlate = raw;
     Storage.saveActivePlate(insp).catch(() => {});
-    startStep(startStep0);
+    startStep(0);
   }
 
   /* Continuă fotografierea pentru o mașină activă */
@@ -477,7 +486,8 @@ const App = (() => {
     document.getElementById('camera-fallback').classList.add('hidden');
 
     // Note indicator
-    const existing = insp.photos.find(p => p.step === step.id);
+    // Placeholder-ele ✓ (poze deja pe server) nu au imagine locală
+    const existing = insp.photos.find(p => p.step === step.id && !p.uploaded);
     updateNoteIndicator(existing?.note || '');
 
     show('screen-camera');
@@ -523,9 +533,9 @@ const App = (() => {
         (photo ? '' : ' strip-empty');
 
       if (photo && photo.uploaded) {
+        // Poza e deja pe server, nu există local — nu se poate deschide
         thumb.classList.add('strip-uploaded');
         thumb.textContent = '✓';
-        thumb.addEventListener('click', () => { if (idx !== insp.currentStep) startStep(idx); });
       } else if (photo) {
         const img = document.createElement('img');
         img.src = photo.dataUrl || URL.createObjectURL(photo.blob);
@@ -601,10 +611,8 @@ const App = (() => {
       hideStepInstruction();
       toast('Se procesează…', 'info');
       try {
-        const blob = await Camera.processImportedFile(file, buildWatermark());
-        await savePhoto({ step: step.id, blob, source: 'camera' }, insp);
-        showPreview(blob);
-        renderPhotoStrip();
+        const raw = await Camera.fileToCanvas(file);
+        await processAndSave(raw, { step, insp, source: 'camera', watermark: buildWatermark() });
       } catch (err) {
         toast(err.message, 'error');
       }
@@ -618,10 +626,8 @@ const App = (() => {
     const step = insp.activeSteps[insp.currentStep];
     if (!step) return;
     try {
-      const blob = await Camera.capture(buildWatermark());
-      await savePhoto({ step: step.id, blob, source: 'camera' }, insp);
-      showPreview(blob);
-      renderPhotoStrip();
+      const raw = Camera.captureCanvas();
+      await processAndSave(raw, { step, insp, source: 'camera', watermark: buildWatermark() });
     } catch (err) {
       toast(err.message, 'error');
     }
@@ -643,17 +649,51 @@ const App = (() => {
 
       toast('Se procesează imaginea…', 'info');
       try {
-        const blob = await Camera.processImportedFile(file, buildWatermark(true));
-        await savePhoto({ step: step.id, blob, source: 'import' }, insp);
-        showPreview(blob);
-        renderPhotoStrip();
-        toast('Fotografie importată și marcată.', 'success');
+        const raw = await Camera.fileToCanvas(file);
+        const cropped = await processAndSave(raw, { step, insp, source: 'import', watermark: buildWatermark(true) });
+        if (!cropped) toast('Fotografie importată și marcată.', 'success');
       } catch (err) {
         toast(err.message, 'error');
       }
     };
 
     input.click();
+  }
+
+  /* Detectează documentul (dacă există), decupează automat, aplică watermark-ul
+     și salvează. Poza originală se păstrează pentru ajustarea manuală a colțurilor.
+     Returnează true dacă s-a decupat un document. */
+  async function processAndSave(raw, { step, insp, source, watermark }) {
+    let quad = null;
+    let finalCanvas = raw;
+    try {
+      // Așteptăm OpenCV doar puțin — dacă nu e gata, poza rămâne întreagă
+      if (await DocScan.waitReady(DOCSCAN_WAIT_MS)) {
+        quad = await DocScan.detect(raw);
+        const warped = quad && await DocScan.warp(raw, quad);
+        if (warped) finalCanvas = warped;
+        else quad = null;
+      }
+    } catch (err) {
+      console.warn('[docscan]', err);
+      quad = null;
+      finalCanvas = raw;
+    }
+
+    const [blob, originalBlob] = await Promise.all([
+      Camera.finalize(finalCanvas, watermark),
+      Camera.canvasToBlob(raw).catch(() => null),
+    ]);
+
+    await savePhoto({ step: step.id, blob, source, originalBlob, quad, autoQuad: quad, watermark }, insp);
+
+    // Afișăm rezultatul doar dacă inspectorul e încă la aceeași etapă
+    if (currentInspection() === insp && insp.activeSteps[insp.currentStep] === step) {
+      showPreview(blob);
+      renderPhotoStrip();
+      if (quad) toast('Document detectat și decupat automat.', 'success');
+    }
+    return !!quad;
   }
 
   function buildWatermark(isImport = false) {
@@ -677,13 +717,18 @@ const App = (() => {
     if (!insp) return;
     const dataUrl = await blobToDataUrl(data.blob);
     const photo = {
-      step:      data.step,
-      blob:      data.blob,
-      baseBlob:  data.blob,
+      step:         data.step,
+      blob:         data.blob,
+      baseBlob:     data.blob,
       dataUrl,           // URL stabil — nu dispare după sleep iOS
-      source:    data.source,
-      note:      '',
-      timestamp: new Date().toISOString(),
+      source:       data.source,
+      note:         '',
+      timestamp:    new Date().toISOString(),
+      // Decupare document — originalul (fără watermark) permite reajustarea colțurilor
+      originalBlob: data.originalBlob || null,
+      quad:         data.quad || null,
+      autoQuad:     data.autoQuad || null,
+      watermark:    data.watermark || null,
     };
 
     const idx = insp.photos.findIndex(p => p.step === data.step);
@@ -701,7 +746,7 @@ const App = (() => {
   function openNoteModal() {
     const insp  = currentInspection();
     const step  = insp.activeSteps[insp.currentStep];
-    const photo = insp.photos.find(p => p.step === step.id);
+    const photo = insp.photos.find(p => p.step === step.id && !p.uploaded);
 
     if (!photo) { toast('Faceți mai întâi o fotografie.', 'error'); return; }
 
@@ -718,7 +763,7 @@ const App = (() => {
     const text  = document.getElementById('note-textarea').value.trim();
     const insp  = currentInspection();
     const step  = insp.activeSteps[insp.currentStep];
-    const photo = insp.photos.find(p => p.step === step.id);
+    const photo = insp.photos.find(p => p.step === step.id && !p.uploaded);
     if (!photo) { closeNoteModal(); return; }
 
     closeNoteModal();
@@ -726,6 +771,9 @@ const App = (() => {
     try {
       photo.blob = await Camera.applyNote(photo.baseBlob, text);
       photo.note = text;
+      photo.dataUrl = await blobToDataUrl(photo.blob);
+      // Persistăm — altfel notița se pierde dacă iOS reîncarcă pagina
+      Storage.saveActivePlate(insp).catch(() => {});
       updateNoteIndicator(text);
       showPreview(photo.blob);
       toast(text ? 'Notiță salvată și aplicată pe fotografie.' : 'Notiță ștearsă.', 'success');
@@ -753,6 +801,7 @@ const App = (() => {
     document.getElementById('preview-img').classList.remove('hidden');
     document.getElementById('capture-controls').classList.add('hidden');
     document.getElementById('preview-controls').classList.remove('hidden');
+    updateCropButton();
   }
 
   function hidePreview() {
@@ -760,6 +809,7 @@ const App = (() => {
     document.getElementById('camera-video').classList.remove('hidden');
     document.getElementById('capture-controls').classList.remove('hidden');
     document.getElementById('preview-controls').classList.add('hidden');
+    updateCropButton();
   }
 
   function retakePhoto() {
@@ -771,6 +821,352 @@ const App = (() => {
     } else {
       ensureCameraRunning();
     }
+  }
+
+  /* ============================================================
+     Decupare document — ajustare manuală a colțurilor
+     ============================================================ */
+  const crop = {
+    photo:   null,  // fotografia editată
+    insp:    null,
+    src:     null,  // canvas cu poza originală (fără watermark)
+    quad:    null,  // 4 colțuri în coordonatele imaginii: tl, tr, br, bl
+    scale:   1,     // px ecran / px imagine
+    offX:    0,
+    offY:    0,
+    active:  -1,    // colțul tras acum
+    grabDX:  0,
+    grabDY:  0,
+    pointer: null,
+    raf:     0,
+    busy:    false,
+  };
+
+  const HANDLE_R   = 13;   // raza colțului desenat (px CSS)
+  const HANDLE_HIT = 44;   // zona de atingere în jurul colțului (px CSS)
+  const LOUPE_R    = 58;   // lupa care arată colțul de sub deget
+  const LOUPE_ZOOM = 2.5;
+
+  function currentPhoto() {
+    const insp = currentInspection();
+    if (!insp) return null;
+    const step = insp.activeSteps[insp.currentStep];
+    return step ? insp.photos.find(p => p.step === step.id && !p.uploaded) || null : null;
+  }
+
+  /* După reload pe iOS, blob-urile din IndexedDB pot ieși goale */
+  function hasOriginal(photo) {
+    return photo.originalBlob instanceof Blob && photo.originalBlob.size > 0;
+  }
+
+  /* Butonul de decupare din previzualizare: apare doar când avem originalul */
+  function updateCropButton() {
+    const btn = document.getElementById('crop-btn');
+    if (!btn) return;
+    const previewVisible = !document.getElementById('preview-img').classList.contains('hidden');
+    const photo = previewVisible ? currentPhoto() : null;
+    if (!photo || !hasOriginal(photo) || !DocScan.isReady()) {
+      btn.classList.add('hidden');
+      return;
+    }
+    btn.textContent = photo.quad ? '✂ Ajustează decupajul' : '✂ Decupează document';
+    btn.classList.toggle('crop-btn-active', !!photo.quad);
+    btn.classList.remove('hidden');
+  }
+
+  function defaultQuad(w, h) {
+    const mx = w * 0.1, my = h * 0.1;
+    return [
+      { x: mx,     y: my },
+      { x: w - mx, y: my },
+      { x: w - mx, y: h - my },
+      { x: mx,     y: h - my },
+    ];
+  }
+
+  async function openCropEditor() {
+    const photo = currentPhoto();
+    if (!photo || !hasOriginal(photo) || crop.busy) return;
+    if (!DocScan.isReady()) { toast('Funcția de decupare încă se încarcă…', 'info'); return; }
+
+    crop.busy = true;
+    try {
+      crop.src   = await Camera.fileToCanvas(photo.originalBlob);
+      crop.photo = photo;
+      crop.insp  = currentInspection();
+      const w = crop.src.width, h = crop.src.height;
+      // Fără decupaj automat: încercăm încă o dată detecția, altfel un cadru implicit
+      const start = photo.quad || photo.autoQuad || await DocScan.detect(crop.src) || defaultQuad(w, h);
+      crop.quad = start.map(p => ({ x: p.x, y: p.y }));
+      crop.active = -1;
+
+      document.getElementById('crop-editor').classList.add('open');
+      layoutCropCanvas();
+    } catch (err) {
+      toast('Nu s-a putut deschide editorul: ' + err.message, 'error');
+      closeCropEditor();
+    } finally {
+      crop.busy = false;
+    }
+  }
+
+  function closeCropEditor() {
+    document.getElementById('crop-editor').classList.remove('open');
+    cancelAnimationFrame(crop.raf);
+    crop.photo = crop.insp = crop.src = crop.quad = null;
+    crop.active = -1;
+    crop.pointer = null;
+  }
+
+  function layoutCropCanvas() {
+    if (!crop.src) return;
+    const canvas = document.getElementById('crop-canvas');
+    const stage  = canvas.parentElement;
+    const cw = stage.clientWidth, ch = stage.clientHeight;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = Math.round(cw * dpr);
+    canvas.height = Math.round(ch * dpr);
+    canvas.style.width  = cw + 'px';
+    canvas.style.height = ch + 'px';
+
+    // Margine ca să poată fi prinse și colțurile de la marginea pozei
+    const pad = 28;
+    const iw = crop.src.width, ih = crop.src.height;
+    crop.scale = Math.min((cw - pad * 2) / iw, (ch - pad * 2) / ih);
+    crop.offX = (cw - iw * crop.scale) / 2;
+    crop.offY = (ch - ih * crop.scale) / 2;
+    drawCrop();
+  }
+
+  function toScreen(p) {
+    return { x: crop.offX + p.x * crop.scale, y: crop.offY + p.y * crop.scale };
+  }
+
+  function drawCrop() {
+    const canvas = document.getElementById('crop-canvas');
+    if (!crop.src || !canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const cw = canvas.width / dpr, ch = canvas.height / dpr;
+    const iw = crop.src.width * crop.scale, ih = crop.src.height * crop.scale;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.drawImage(crop.src, crop.offX, crop.offY, iw, ih);
+
+    const pts = crop.quad.map(toScreen);
+
+    // Întunecăm tot ce rămâne în afara documentului
+    ctx.beginPath();
+    ctx.rect(crop.offX, crop.offY, iw, ih);
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 3; i >= 1; i--) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fill('evenodd');
+
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < 4; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#FF5F1F';
+    ctx.stroke();
+
+    pts.forEach((p, i) => {
+      const r = i === crop.active ? HANDLE_R + 4 : HANDLE_R;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = i === crop.active ? 'rgba(255,95,31,0.35)' : 'rgba(255,255,255,0.25)';
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = i === crop.active ? '#FF5F1F' : '#FFFFFF';
+      ctx.stroke();
+    });
+
+    if (crop.active >= 0) drawLoupe(ctx, cw, pts[crop.active]);
+  }
+
+  /* Lupă cu zona de sub deget — degetul acoperă colțul, lupa îl arată mărit */
+  function drawLoupe(ctx, cw, p) {
+    const margin = 14;
+    const lx = p.x < cw / 2 ? cw - LOUPE_R - margin : LOUPE_R + margin;
+    const ly = LOUPE_R + margin;
+    const q = crop.quad[crop.active];
+    const k = crop.scale * LOUPE_ZOOM;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(lx, ly, LOUPE_R, 0, Math.PI * 2);
+    ctx.fillStyle = '#000';
+    ctx.fill();
+    ctx.clip();
+    // Desenăm toată poza mărită, centrată pe colț — fără sursă parțială în afara
+    // imaginii (Safari vechi nu desenează nimic în acel caz)
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.scale(k, k);
+    ctx.translate(-q.x, -q.y);
+    ctx.drawImage(crop.src, 0, 0);
+    ctx.restore();
+
+    // Laturile care pleacă din colț, desenate și în lupă
+    const toLoupe = pt => ({ x: lx + (pt.x - q.x) * k, y: ly + (pt.y - q.y) * k });
+    const prev = toLoupe(crop.quad[(crop.active + 3) % 4]);
+    const next = toLoupe(crop.quad[(crop.active + 1) % 4]);
+    ctx.beginPath();
+    ctx.moveTo(prev.x, prev.y);
+    ctx.lineTo(lx, ly);
+    ctx.lineTo(next.x, next.y);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#FF5F1F';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(lx - 10, ly); ctx.lineTo(lx + 10, ly);
+    ctx.moveTo(lx, ly - 10); ctx.lineTo(lx, ly + 10);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(lx, ly, LOUPE_R, 0, Math.PI * 2);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.stroke();
+  }
+
+  function scheduleCropDraw() {
+    cancelAnimationFrame(crop.raf);
+    crop.raf = requestAnimationFrame(drawCrop);
+  }
+
+  function cropPointerPos(e) {
+    const rect = document.getElementById('crop-canvas').getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  function onCropPointerDown(e) {
+    if (!crop.quad || crop.pointer !== null) return;
+    const pos = cropPointerPos(e);
+    let best = -1, bestD = Infinity;
+    crop.quad.forEach((p, i) => {
+      const s = toScreen(p);
+      const d = Math.hypot(s.x - pos.x, s.y - pos.y);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    if (best < 0 || bestD > HANDLE_HIT) return;
+
+    e.preventDefault();
+    const s = toScreen(crop.quad[best]);
+    crop.active = best;
+    crop.grabDX = s.x - pos.x;   // colțul nu „sare” sub deget
+    crop.grabDY = s.y - pos.y;
+    crop.pointer = e.pointerId;
+    try { e.target.setPointerCapture(e.pointerId); } catch {}
+    scheduleCropDraw();
+  }
+
+  function onCropPointerMove(e) {
+    if (e.pointerId !== crop.pointer || crop.active < 0) return;
+    e.preventDefault();
+    const pos = cropPointerPos(e);
+    const x = (pos.x + crop.grabDX - crop.offX) / crop.scale;
+    const y = (pos.y + crop.grabDY - crop.offY) / crop.scale;
+    crop.quad[crop.active] = {
+      x: Math.max(0, Math.min(crop.src.width,  x)),
+      y: Math.max(0, Math.min(crop.src.height, y)),
+    };
+    scheduleCropDraw();
+  }
+
+  function onCropPointerUp(e) {
+    if (e.pointerId !== crop.pointer) return;
+    crop.pointer = null;
+    crop.active = -1;
+    scheduleCropDraw();
+  }
+
+  async function resetCrop() {
+    const src = crop.src;
+    if (!src || crop.busy) return;
+    crop.busy = true;
+    try {
+      const q = (crop.photo && crop.photo.autoQuad) || await DocScan.detect(src) || defaultQuad(src.width, src.height);
+      if (crop.src !== src) return; // editorul s-a închis între timp
+      crop.quad = q.map(p => ({ x: p.x, y: p.y }));
+      scheduleCropDraw();
+    } finally {
+      crop.busy = false;
+    }
+  }
+
+  /* Salvează noua variantă a fotografiei (decupată sau întreagă) */
+  async function commitCrop(useQuad) {
+    const photo = crop.photo, insp = crop.insp, src = crop.src;
+    if (!photo || !src || crop.busy) return;
+
+    let quad = null;
+    let canvas = src;
+    if (useQuad) {
+      quad = DocScan.orderCorners(crop.quad);
+      if (!quad || !DocScan.isConvexQuad(quad) || DocScan.polygonArea(quad) < src.width * src.height * 0.02) {
+        toast('Colțurile nu formează un document valid. Ajustați-le din nou.', 'error');
+        return;
+      }
+    }
+
+    crop.busy = true;
+    try {
+      if (useQuad) {
+        canvas = await DocScan.warp(src, quad);
+        if (crop.photo !== photo) return;  // editorul a fost închis între timp
+        if (!canvas) { toast('Decuparea a eșuat. Încercați din nou.', 'error'); return; }
+      }
+      const watermark = photo.watermark || buildWatermark(photo.source === 'import');
+      const base = await Camera.finalize(canvas, watermark);
+      const finalBlob = photo.note ? await Camera.applyNote(base, photo.note) : base;
+
+      photo.baseBlob = base;
+      photo.blob     = finalBlob;
+      photo.dataUrl  = await blobToDataUrl(finalBlob);
+      photo.quad     = quad;
+      Storage.saveActivePlate(insp).catch(() => {});
+
+      closeCropEditor();
+      if (currentPhoto() === photo) {
+        showPreview(finalBlob);
+        renderPhotoStrip();
+      }
+      toast(quad ? 'Decupaj aplicat.' : 'Se folosește fotografia întreagă.', 'success');
+    } catch (err) {
+      toast('Eroare la salvare: ' + err.message, 'error');
+    } finally {
+      crop.busy = false;
+    }
+  }
+
+  function applyCrop()  { commitCrop(true); }
+  function removeCrop() { commitCrop(false); }
+
+  function initCropEditor() {
+    const canvas = document.getElementById('crop-canvas');
+    if (!canvas) return;
+    canvas.addEventListener('pointerdown',   onCropPointerDown);
+    canvas.addEventListener('pointermove',   onCropPointerMove);
+    canvas.addEventListener('pointerup',     onCropPointerUp);
+    canvas.addEventListener('pointercancel', onCropPointerUp);
+    window.addEventListener('resize', () => {
+      if (document.getElementById('crop-editor').classList.contains('open')) layoutCropCanvas();
+    });
+  }
+
+  /* Încărcăm OpenCV în fundal, ca să fie gata până la prima poză */
+  function preloadDocScan() {
+    setTimeout(() => {
+      DocScan.load().then(ok => { if (ok) updateCropButton(); });
+    }, 1500);
   }
 
   async function cancelCase(plate) {
@@ -1290,6 +1686,11 @@ const App = (() => {
     closePhotoViewer,
     openLightbox,
     closeLightbox,
+    openCropEditor,
+    closeCropEditor,
+    applyCrop,
+    removeCrop,
+    resetCrop,
   };
 })();
 
