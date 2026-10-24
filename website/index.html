@@ -1055,7 +1055,7 @@ footer {
   <div class="container" style="position:relative;z-index:1">
     <div class="hero-badge">
       <span class="hero-badge-dot"></span>
-      Nou — versiunea 1.3.3 disponibilă
+      <span id="hero-version-badge">Nou — versiunea 1.4.3 disponibilă</span>
     </div>
 
     <h1 class="hero-title">
@@ -1467,6 +1467,8 @@ fetch('https://api.github.com/repos/Gabrielfof/inspectorcam-app/releases/latest'
     const dmgArm = assets.find(a => a.name.includes('arm64') && a.name.endsWith('.dmg'));
     // x64 nu are suffix de arhitectură în numele fișierului
     const dmgX64 = assets.find(a => !a.name.includes('arm64') && !a.name.includes('universal') && a.name.endsWith('.dmg'));
+    const badge = document.getElementById('hero-version-badge');
+    if (badge && v) badge.textContent = `Nou — versiunea ${v.replace('v','')} disponibilă`;
     if (exe) {
       document.getElementById('dl-win').href = exe.browser_download_url;
       document.getElementById('dl-win-label').textContent = `Windows (.exe) — ${v}`;
