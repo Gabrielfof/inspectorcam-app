@@ -203,19 +203,19 @@ const DocScanCore = (() => {
     return true;
   }
 
-  /* Fiecare latură trebuie să fie o margine reală: pe aproape toată lungimea,
-     interiorul (foaia) e vizibil mai luminos decât exteriorul (masa). */
-  function edgesSupported(gray, q) {
-    const W = gray.cols, H = gray.rows, d = gray.data;
+  /* Cât de „margine reală” e fiecare latură (0..1): pe ce parte din lungime
+     interiorul (foaia) se deosebește clar de exterior — mai luminos, sau de altă
+     culoare fără să fie mai întunecat (foaie albă pe lemn deschis, talon colorat). */
+  function edgesSupported(gray, rgba, q) {
+    const W = gray.cols, H = gray.rows, d = gray.data, c = rgba.data;
     const cx = q.reduce((s, p) => s + p.x, 0) / 4;
     const cy = q.reduce((s, p) => s + p.y, 0) / 4;
     const OFF = Math.max(3, Math.round(Math.min(W, H) * 0.008));
-    const px = (x, y) => {
+    const idx = (x, y) => {
       const xi = Math.round(x), yi = Math.round(y);
-      if (xi < 0 || yi < 0 || xi >= W || yi >= H) return -1;
-      return d[yi * W + xi];
+      return (xi < 0 || yi < 0 || xi >= W || yi >= H) ? -1 : yi * W + xi;
     };
-    let total = 0;
+    const ratios = [];
     for (let i = 0; i < 4; i++) {
       const a = q[i], b = q[(i + 1) % 4];
       const len = dist(a, b);
@@ -227,24 +227,36 @@ const DocScanCore = (() => {
       for (let k = 2; k < N - 2; k++) {          // fără capete (colțuri, umbre)
         const t = k / (N - 1);
         const x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
-        const inV = px(x + nx * OFF, y + ny * OFF);
-        const outV = px(x - nx * OFF, y - ny * OFF);
-        if (inV < 0 || outV < 0) continue;        // în afara pozei
+        const iIn = idx(x + nx * OFF, y + ny * OFF);
+        const iOut = idx(x - nx * OFF, y - ny * OFF);
+        if (iIn < 0 || iOut < 0) continue;        // în afara pozei
         counted++;
-        if (inV - outV >= 12) pos++;
+        const dL = d[iIn] - d[iOut];
+        const dC = Math.max(Math.abs(c[iIn * 4] - c[iOut * 4]),
+                            Math.abs(c[iIn * 4 + 1] - c[iOut * 4 + 1]),
+                            Math.abs(c[iIn * 4 + 2] - c[iOut * 4 + 2]));
+        if (dL >= 12 || (dC >= 24 && dL >= -4)) pos++;
       }
       // O latură aproape în întregime în afara pozei nu poate fi verificată
-      if (counted < (N - 4) * 0.5) return false;
-      const ratio = pos / counted;
-      if (ratio < 0.6) return false;
-      total += ratio;
+      ratios.push(counted < (N - 4) * 0.5 ? 0 : pos / counted);
     }
-    return total / 4 >= 0.75;
+    return ratios.sort((x, y) => y - x);   // descrescător
+  }
+
+  // Toate laturile clare
+  function edgesStrong(r) {
+    return r[3] >= 0.6 && (r[0] + r[1] + r[2] + r[3]) / 4 >= 0.75;
+  }
+
+  // O latură slabă (marginea unei folii, fundal aproape alb lângă foaie)
+  // e acceptată doar dacă celelalte trei sunt aproape perfecte
+  function edgesOneWeak(r) {
+    return r[2] >= 0.9 && r[3] >= 0.25;
   }
 
   /* Interiorul arată a hârtie: necolorat, cu text/linii.
      Exclude caroseria, geamurile, ecranele etc. */
-  function looksLikePaper(cv, srcRgba, q) {
+  function looksLikePaper(cv, srcRgba, q, allowBlank) {
     const r = dist(q[0], q[1]) / Math.max(1, dist(q[0], q[3]));
     const [w, h] = r >= 1 ? [320, Math.round(320 / r)] : [Math.round(320 * r), 320];
     if (w < 20 || h < 20) return false;
@@ -275,7 +287,7 @@ const DocScanCore = (() => {
 
       // Luminozitatea e relativă (marginile garantează deja foaie > fundal):
       // acceptăm și lumină slabă; textul/liniile trebuie să existe
-      return meanL >= 50 && meanS <= 60 && darkFrac >= 0.002 && darkFrac <= 0.45;
+      return meanL >= 50 && meanS <= 60 && darkFrac <= 0.45 && (allowBlank || darkFrac >= 0.002);
     } finally {
       srcTri.delete(); dstTri.delete(); M.delete(); dst.delete();
     }
@@ -295,6 +307,7 @@ const DocScanCore = (() => {
       const gray  = track(new cv.Mat());
       const blur  = track(new cv.Mat());
       const edges = track(new cv.Mat());
+      const cblur = track(new cv.Mat());
       const bin   = track(new cv.Mat());
       const k3    = track(cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(3, 3)));
       const k5    = track(cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(5, 5)));
@@ -307,6 +320,7 @@ const DocScanCore = (() => {
 
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
       cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
+      cv.GaussianBlur(src, cblur, new cv.Size(5, 5), 0);
 
       const minArea = sw * sh * 0.15;
       const candidates = [];
@@ -339,13 +353,28 @@ const DocScanCore = (() => {
       cv.morphologyEx(bin, bin, cv.MORPH_OPEN, k5);
       collectQuads(cv, bin, minArea, candidates);
 
-      // Cel mai mare candidat valid câștigă
+      // Cel mai mare candidat valid câștigă — întâi cei cu toate marginile clare,
+      // abia apoi cei cu o latură slabă (altfel un contur mai mare și mai puțin
+      // exact, ex. foaia + umbra ei, ar câștiga în fața celui corect)
       candidates.sort((a, b) => polygonArea(b) - polygonArea(a));
       if (dbg) dbg.candidates = candidates.length;
+      const checked = [];
       for (const q of candidates) {
         if (!isPlausibleDocument(q, sw, sh)) { if (dbg) dbg.shape = (dbg.shape || 0) + 1; continue; }
-        if (!edgesSupported(blur, q))        { if (dbg) dbg.edges = (dbg.edges || 0) + 1; continue; }
-        if (!looksLikePaper(cv, src, q))     { if (dbg) dbg.paper = (dbg.paper || 0) + 1; continue; }
+        checked.push({ q, er: edgesSupported(blur, cblur, q) });
+      }
+      const pick = test => {
+        for (const { q, er } of checked) {
+          if (!test(er)) continue;
+          // Foaie fără text (verso, foaie în folie) — doar cu toate 4 marginile perfecte
+          if (looksLikePaper(cv, src, q, er[3] >= 0.9)) return q;
+          if (dbg) dbg.paper = (dbg.paper || 0) + 1;
+        }
+        return null;
+      };
+      const q = pick(edgesStrong) || pick(edgesOneWeak);
+      if (dbg && !q) dbg.edges = checked.length;
+      if (q) {
         const r = refineQuad(blur, q);
         const best = r && isPlausibleDocument(r, sw, sh) ? r : q;
         if (dbg) dbg.refined = best === r;
