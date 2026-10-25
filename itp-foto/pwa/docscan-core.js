@@ -86,16 +86,18 @@ const DocScanCore = (() => {
 
   /* Rafinează colțurile: fiecare latură e recalculată din marginea reală găsită
      în imagine pe porțiunea ei din mijloc, iar colțurile ies din intersecția
-     laturilor. Un obiect alb lipit de un colț nu mai „trage” colțul spre el. */
-  function refineQuad(gray, q) {
-    const W = gray.cols, H = gray.rows, d = gray.data;
-    const g = (x, y) => {
+     laturilor. Corectează colțuri tăiate (colț îndoit, scris de mână) sau trase
+     de un obiect alb lipit de foaie. Marginea = foaia mai luminoasă sau mai puțin
+     colorată decât fundalul. */
+  function refineQuad(gray, sat, q, radius) {
+    const W = gray.cols, H = gray.rows, d = gray.data, sd = sat.data;
+    const at = (x, y) => {
       const xi = Math.round(x), yi = Math.round(y);
-      return (xi < 0 || yi < 0 || xi >= W || yi >= H) ? -1 : d[yi * W + xi];
+      return (xi < 0 || yi < 0 || xi >= W || yi >= H) ? -1 : yi * W + xi;
     };
     const cx = q.reduce((s, p) => s + p.x, 0) / 4;
     const cy = q.reduce((s, p) => s + p.y, 0) / 4;
-    const R = Math.max(4, Math.round(Math.min(W, H) * 0.02));
+    const R = Math.max(4, Math.round(Math.min(W, H) * radius));
     const lines = [];
     for (let i = 0; i < 4; i++) {
       const a = q[i], b = q[(i + 1) % 4];
@@ -103,27 +105,40 @@ const DocScanCore = (() => {
       const ux = (b.x - a.x) / len, uy = (b.y - a.y) / len;
       let nx = -uy, ny = ux;
       if ((cx - (a.x + b.x) / 2) * nx + (cy - (a.y + b.y) / 2) * ny < 0) { nx = -nx; ny = -ny; }
-      const pts = [];
+      let pts = [];
       for (let k = 0; k <= 24; k++) {
-        const t = 0.15 + 0.7 * k / 24;
+        const t = 0.12 + 0.76 * k / 24;
         const bx = a.x + (b.x - a.x) * t, by = a.y + (b.y - a.y) * t;
         let best = 0, bestO = 0;
         for (let o = -R; o <= R; o++) {
-          const inV = g(bx + nx * (o + 2), by + ny * (o + 2));
-          const outV = g(bx + nx * (o - 2), by + ny * (o - 2));
-          if (inV < 0 || outV < 0) continue;
-          if (inV - outV > best) { best = inV - outV; bestO = o; }
+          const iIn = at(bx + nx * (o + 2), by + ny * (o + 2));
+          const iOut = at(bx + nx * (o - 2), by + ny * (o - 2));
+          if (iIn < 0 || iOut < 0) continue;
+          // Preferăm marginea cea mai apropiată de latura inițială la scor egal
+          const score = Math.max(d[iIn] - d[iOut], sd[iOut] - sd[iIn]) - Math.abs(o) * 0.15;
+          if (score > best) { best = score; bestO = o; }
         }
         if (best >= 15) pts.push({ x: bx + nx * bestO, y: by + ny * bestO });
       }
       if (pts.length < 10) return null;
-      // Dreapta prin puncte (cele mai mici pătrate totale)
-      const mx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
-      const my = pts.reduce((s, p) => s + p.y, 0) / pts.length;
-      let sxx = 0, syy = 0, sxy = 0;
-      pts.forEach(p => { const dx = p.x - mx, dy = p.y - my; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; });
-      const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
-      lines.push({ x: mx, y: my, dx: Math.cos(ang), dy: Math.sin(ang) });
+      // Dreapta prin puncte (cele mai mici pătrate totale), refăcută fără
+      // punctele cele mai depărtate (scris, umbre, colțuri îndoite)
+      let line = null;
+      for (let pass = 0; pass < 2; pass++) {
+        const mx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+        const my = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+        let sxx = 0, syy = 0, sxy = 0;
+        pts.forEach(p => { const dx = p.x - mx, dy = p.y - my; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; });
+        const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+        line = { x: mx, y: my, dx: Math.cos(ang), dy: Math.sin(ang) };
+        if (pass === 0) {
+          const res = pts.map(p => Math.abs((p.x - mx) * line.dy - (p.y - my) * line.dx));
+          const cut = [...res].sort((x, y) => x - y)[Math.floor(res.length * 0.75)];
+          pts = pts.filter((p, k) => res[k] <= cut);
+          if (pts.length < 8) return null;
+        }
+      }
+      lines.push(line);
     }
     const out = [];
     for (let i = 0; i < 4; i++) {
@@ -133,8 +148,8 @@ const DocScanCore = (() => {
       const t = ((L2.x - L1.x) * L2.dy - (L2.y - L1.y) * L2.dx) / den;
       out.push({ x: L1.x + L1.dx * t, y: L1.y + L1.dy * t });
     }
-    // Acceptăm doar corecturi mici și o formă validă
-    const maxMove = Math.hypot(W, H) * 0.05;
+    // Acceptăm doar corecturi rezonabile și o formă validă
+    const maxMove = Math.hypot(W, H) * radius * 1.4;
     if (!isConvexQuad(out) || out.some((p, i) => dist(p, q[i]) > maxMove)) return null;
     return out;
   }
@@ -204,10 +219,12 @@ const DocScanCore = (() => {
   }
 
   /* Cât de „margine reală” e fiecare latură (0..1): pe ce parte din lungime
-     interiorul (foaia) se deosebește clar de exterior — mai luminos, sau de altă
-     culoare fără să fie mai întunecat (foaie albă pe lemn deschis, talon colorat). */
-  function edgesSupported(gray, rgba, q) {
-    const W = gray.cols, H = gray.rows, d = gray.data, c = rgba.data;
+     interiorul (foaia) se deosebește clar de exterior — mai luminos, de altă
+     culoare fără să fie mai întunecat (talon colorat), sau vizibil mai puțin
+     colorat (hârtia e neutră; lemnul, mocheta, vopseaua nu — chiar dacă foaia
+     e în umbră și mai întunecată decât un parchet deschis). */
+  function edgesSupported(gray, rgba, sat, q) {
+    const W = gray.cols, H = gray.rows, d = gray.data, c = rgba.data, sd = sat.data;
     const cx = q.reduce((s, p) => s + p.x, 0) / 4;
     const cy = q.reduce((s, p) => s + p.y, 0) / 4;
     const OFF = Math.max(3, Math.round(Math.min(W, H) * 0.008));
@@ -235,7 +252,8 @@ const DocScanCore = (() => {
         const dC = Math.max(Math.abs(c[iIn * 4] - c[iOut * 4]),
                             Math.abs(c[iIn * 4 + 1] - c[iOut * 4 + 1]),
                             Math.abs(c[iIn * 4 + 2] - c[iOut * 4 + 2]));
-        if (dL >= 12 || (dC >= 24 && dL >= -4)) pos++;
+        const dS = sd[iOut] - sd[iIn];
+        if (dL >= 12 || (dC >= 24 && dL >= -4) || (dS >= 20 && dC >= 20)) pos++;
       }
       // O latură aproape în întregime în afara pozei nu poate fi verificată
       ratios.push(counted < (N - 4) * 0.5 ? 0 : pos / counted);
@@ -245,13 +263,7 @@ const DocScanCore = (() => {
 
   // Toate laturile clare
   function edgesStrong(r) {
-    return r[3] >= 0.6 && (r[0] + r[1] + r[2] + r[3]) / 4 >= 0.75;
-  }
-
-  // O latură slabă (marginea unei folii, fundal aproape alb lângă foaie)
-  // e acceptată doar dacă celelalte trei sunt aproape perfecte
-  function edgesOneWeak(r) {
-    return r[2] >= 0.9 && r[3] >= 0.25;
+    return r[3] >= 0.7 && (r[0] + r[1] + r[2] + r[3]) / 4 >= 0.8;
   }
 
   /* Interiorul arată a hârtie: necolorat, cu text/linii.
@@ -317,6 +329,8 @@ const DocScanCore = (() => {
       const chans = track(new cv.MatVector());
       const lowS  = track(new cv.Mat());
       const highV = track(new cv.Mat());
+      const hsvB  = track(new cv.Mat());
+      const chB   = track(new cv.MatVector());
 
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
       cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
@@ -353,35 +367,53 @@ const DocScanCore = (() => {
       cv.morphologyEx(bin, bin, cv.MORPH_OPEN, k5);
       collectQuads(cv, bin, minArea, candidates);
 
-      // Cel mai mare candidat valid câștigă — întâi cei cu toate marginile clare,
-      // abia apoi cei cu o latură slabă (altfel un contur mai mare și mai puțin
-      // exact, ex. foaia + umbra ei, ar câștiga în fața celui corect)
+      // 5) Neutru vs colorat (prag automat pe saturație) — foaia gri/albă pe lemn
+      //    deschis, mochetă, vopsea, chiar dacă e în umbră
+      cv.cvtColor(cblur, rgb, cv.COLOR_RGBA2RGB);
+      cv.cvtColor(rgb, hsvB, cv.COLOR_RGB2HSV);
+      cv.split(hsvB, chB);
+      const satB = track(chB.get(1));
+      cv.threshold(satB, bin, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+      cv.morphologyEx(bin, bin, cv.MORPH_CLOSE, k7);
+      cv.morphologyEx(bin, bin, cv.MORPH_OPEN, k5);
+      collectQuads(cv, bin, minArea, candidates);
+
+      // Cel mai mare candidat valid, cu toate marginile clare, câștigă
       candidates.sort((a, b) => polygonArea(b) - polygonArea(a));
       if (dbg) dbg.candidates = candidates.length;
       const checked = [];
-      for (const q of candidates) {
-        if (!isPlausibleDocument(q, sw, sh)) { if (dbg) dbg.shape = (dbg.shape || 0) + 1; continue; }
-        checked.push({ q, er: edgesSupported(blur, cblur, q) });
+      for (const q0 of candidates) {
+        if (!isPlausibleDocument(q0, sw, sh)) { if (dbg) dbg.shape = (dbg.shape || 0) + 1; continue; }
+        // Rafinăm înainte de verificare — un colț tăiat nu mai respinge o foaie corectă.
+        // Păstrăm rafinarea doar dacă toate marginile ei sunt clare (altfel a
+        // „sărit” pe o margine greșită, ex. o umbră)
+        // Întâi o căutare apropiată (precisă); cea largă corectează doar un colț
+        // tăiat de contur — numai când conturul are deja 3 laturi bune
+        const e0 = edgesSupported(blur, cblur, satB, q0);
+        let found = null;
+        for (const radius of e0[2] >= 0.6 ? [0.02, 0.06] : [0.02]) {
+          const r = refineQuad(blur, satB, q0, radius);
+          const er = r && isPlausibleDocument(r, sw, sh) ? edgesSupported(blur, cblur, satB, r) : null;
+          if (er && edgesStrong(er)) { found = { q: r, refined: true, er }; break; }
+        }
+        checked.push(found || { q: q0, refined: false, er: e0 });
       }
       const pick = test => {
-        for (const { q, er } of checked) {
-          if (!test(er)) continue;
+        for (const c of checked) {
+          if (!test(c.er)) continue;
           // Foaie fără text (verso, foaie în folie) — doar cu toate 4 marginile perfecte
-          if (looksLikePaper(cv, src, q, er[3] >= 0.9)) return q;
+          if (looksLikePaper(cv, src, c.q, c.er[3] >= 0.9)) return c;
           if (dbg) dbg.paper = (dbg.paper || 0) + 1;
         }
         return null;
       };
-      const q = pick(edgesStrong) || pick(edgesOneWeak);
-      if (dbg && !q) dbg.edges = checked.length;
-      if (q) {
-        const r = refineQuad(blur, q);
-        const best = r && isPlausibleDocument(r, sw, sh) ? r : q;
-        if (dbg) dbg.refined = best === r;
-        // Colțurile rafinate stau exact pe margine — le strângem doar puțin
-        return insetQuad(best, best === r ? 0.004 : 0.01);
-      }
-      return null;
+      if (dbg) dbg.list = checked.map(c => ({ q: c.q.map(p => [p.x, p.y]), er: c.er.map(v => +v.toFixed(2)), refined: c.refined }));
+      const best = pick(edgesStrong);
+      if (dbg && !best) dbg.edges = checked.length;
+      if (!best) return null;
+      if (dbg) dbg.refined = best.refined;
+      // Colțurile rafinate stau exact pe margine — le strângem doar puțin
+      return insetQuad(best.q, best.refined ? 0.004 : 0.01);
     } finally {
       mats.forEach(m => { try { m.delete(); } catch {} });
     }
