@@ -37,9 +37,6 @@ const App = (() => {
   let cameraRunning = false;
   let cameraMode = 'none'; // 'stream' | 'fileinput'
 
-  // Cât așteptăm după OpenCV la o poză, dacă încă se încarcă (prima utilizare)
-  const DOCSCAN_WAIT_MS = 5000;
-
   /* Helper: inspecția curentă (placa activă în cameră) */
   function currentInspection() {
     return state.activePlates.get(state.currentPlate);
@@ -252,7 +249,6 @@ const App = (() => {
     document.getElementById('home-inspector-name').textContent = state.inspector.name;
     renderActivePlates();
     show('screen-home');
-    preloadDocScan();
 
     const today = new Date().toISOString().slice(0, 10);
 
@@ -650,8 +646,8 @@ const App = (() => {
       toast('Se procesează imaginea…', 'info');
       try {
         const raw = await Camera.fileToCanvas(file);
-        const cropped = await processAndSave(raw, { step, insp, source: 'import', watermark: buildWatermark(true) });
-        if (!cropped) toast('Fotografie importată și marcată.', 'success');
+        await processAndSave(raw, { step, insp, source: 'import', watermark: buildWatermark(true) });
+        toast('Fotografie importată și marcată.', 'success');
       } catch (err) {
         toast(err.message, 'error');
       }
@@ -660,40 +656,21 @@ const App = (() => {
     input.click();
   }
 
-  /* Detectează documentul (dacă există), decupează automat, aplică watermark-ul
-     și salvează. Poza originală se păstrează pentru ajustarea manuală a colțurilor.
-     Returnează true dacă s-a decupat un document. */
+  /* Aplică watermark-ul și salvează. Poza originală (fără watermark) se păstrează
+     pentru decuparea manuală a documentului. */
   async function processAndSave(raw, { step, insp, source, watermark }) {
-    let quad = null;
-    let finalCanvas = raw;
-    try {
-      // Așteptăm OpenCV doar puțin — dacă nu e gata, poza rămâne întreagă
-      if (await DocScan.waitReady(DOCSCAN_WAIT_MS)) {
-        quad = await DocScan.detect(raw);
-        const warped = quad && await DocScan.warp(raw, quad);
-        if (warped) finalCanvas = warped;
-        else quad = null;
-      }
-    } catch (err) {
-      console.warn('[docscan]', err);
-      quad = null;
-      finalCanvas = raw;
-    }
-
     const [blob, originalBlob] = await Promise.all([
-      Camera.finalize(finalCanvas, watermark),
+      Camera.finalize(raw, watermark),
       Camera.canvasToBlob(raw).catch(() => null),
     ]);
 
-    await savePhoto({ step: step.id, blob, source, originalBlob, quad, autoQuad: quad, watermark }, insp);
+    await savePhoto({ step: step.id, blob, source, originalBlob, watermark }, insp);
 
     // Afișăm rezultatul doar dacă inspectorul e încă la aceeași etapă
     if (currentInspection() === insp && insp.activeSteps[insp.currentStep] === step) {
       showPreview(blob);
       renderPhotoStrip();
-      if (quad) toast('Document detectat și decupat automat.', 'success');
     }
-    return !!quad;
   }
 
   function buildWatermark(isImport = false) {
@@ -726,8 +703,7 @@ const App = (() => {
       timestamp:    new Date().toISOString(),
       // Decupare document — originalul (fără watermark) permite reajustarea colțurilor
       originalBlob: data.originalBlob || null,
-      quad:         data.quad || null,
-      autoQuad:     data.autoQuad || null,
+      quad:         null,
       watermark:    data.watermark || null,
     };
 
@@ -865,12 +841,12 @@ const App = (() => {
     if (!btn) return;
     const previewVisible = !document.getElementById('preview-img').classList.contains('hidden');
     const photo = previewVisible ? currentPhoto() : null;
-    if (!photo || !hasOriginal(photo) || !DocScan.isReady()) {
+    if (!photo || !hasOriginal(photo)) {
       btn.classList.add('hidden');
       return;
     }
-    btn.textContent = photo.quad ? '✂ Ajustează decupajul' : '✂ Decupează document';
     btn.classList.toggle('crop-btn-active', !!photo.quad);
+    btn.setAttribute('aria-label', photo.quad ? 'Ajustează decupajul' : 'Decupează documentul');
     btn.classList.remove('hidden');
   }
 
@@ -887,16 +863,13 @@ const App = (() => {
   async function openCropEditor() {
     const photo = currentPhoto();
     if (!photo || !hasOriginal(photo) || crop.busy) return;
-    if (!DocScan.isReady()) { toast('Funcția de decupare încă se încarcă…', 'info'); return; }
 
     crop.busy = true;
     try {
       crop.src   = await Camera.fileToCanvas(photo.originalBlob);
       crop.photo = photo;
       crop.insp  = currentInspection();
-      const w = crop.src.width, h = crop.src.height;
-      // Fără decupaj automat: încercăm încă o dată detecția, altfel un cadru implicit
-      const start = photo.quad || photo.autoQuad || await DocScan.detect(crop.src) || defaultQuad(w, h);
+      const start = photo.quad || defaultQuad(crop.src.width, crop.src.height);
       crop.quad = start.map(p => ({ x: p.x, y: p.y }));
       crop.active = -1;
 
@@ -1088,18 +1061,10 @@ const App = (() => {
     scheduleCropDraw();
   }
 
-  async function resetCrop() {
-    const src = crop.src;
-    if (!src || crop.busy) return;
-    crop.busy = true;
-    try {
-      const q = (crop.photo && crop.photo.autoQuad) || await DocScan.detect(src) || defaultQuad(src.width, src.height);
-      if (crop.src !== src) return; // editorul s-a închis între timp
-      crop.quad = q.map(p => ({ x: p.x, y: p.y }));
-      scheduleCropDraw();
-    } finally {
-      crop.busy = false;
-    }
+  function resetCrop() {
+    if (!crop.src) return;
+    crop.quad = defaultQuad(crop.src.width, crop.src.height);
+    scheduleCropDraw();
   }
 
   /* Salvează noua variantă a fotografiei (decupată sau întreagă) */
@@ -1110,8 +1075,8 @@ const App = (() => {
     let quad = null;
     let canvas = src;
     if (useQuad) {
-      quad = DocScan.orderCorners(crop.quad);
-      if (!quad || !DocScan.isConvexQuad(quad) || DocScan.polygonArea(quad) < src.width * src.height * 0.02) {
+      quad = Perspective.orderCorners(crop.quad);
+      if (!quad || !Perspective.isConvexQuad(quad) || Perspective.polygonArea(quad) < src.width * src.height * 0.02) {
         toast('Colțurile nu formează un document valid. Ajustați-le din nou.', 'error');
         return;
       }
@@ -1120,8 +1085,7 @@ const App = (() => {
     crop.busy = true;
     try {
       if (useQuad) {
-        canvas = await DocScan.warp(src, quad);
-        if (crop.photo !== photo) return;  // editorul a fost închis între timp
+        canvas = Perspective.warp(src, quad);
         if (!canvas) { toast('Decuparea a eșuat. Încercați din nou.', 'error'); return; }
       }
       const watermark = photo.watermark || buildWatermark(photo.source === 'import');
@@ -1160,13 +1124,6 @@ const App = (() => {
     window.addEventListener('resize', () => {
       if (document.getElementById('crop-editor').classList.contains('open')) layoutCropCanvas();
     });
-  }
-
-  /* Încărcăm OpenCV în fundal, ca să fie gata până la prima poză */
-  function preloadDocScan() {
-    setTimeout(() => {
-      DocScan.load().then(ok => { if (ok) updateCropButton(); });
-    }, 1500);
   }
 
   async function cancelCase(plate) {
