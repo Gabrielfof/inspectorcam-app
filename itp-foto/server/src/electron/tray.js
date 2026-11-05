@@ -24,6 +24,16 @@ function createTray(app, mainWindow, openSettings, quit, serverInfo) {
         shell.openPath(path.join(os.homedir(), 'InspectorCam'));
       },
     },
+    {
+      // Jurnalul de diagnostic trimis de telefoane (ex. pentru „ecran negru”)
+      label: 'Jurnal telefoane (diagnostic)',
+      click: () => {
+        const { shell } = require('electron');
+        const file = require('../routes/clientLog').logPath();
+        try { require('fs').appendFileSync(file, ''); } catch {}   // există și înainte de primul eveniment
+        shell.showItemInFolder(file);
+      },
+    },
     { label: 'Setări', click: openSettings },
     { type: 'separator' },
     {

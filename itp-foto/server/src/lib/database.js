@@ -6,10 +6,14 @@ const fs = require('fs');
 
 let db = null;
 
-function getDbPath() {
+function getDataDir() {
   const dataDir = process.env.ITP_DATA_DIR || path.join(process.env.APPDATA || process.env.HOME, 'InspectorCam');
   fs.mkdirSync(dataDir, { recursive: true });
-  return path.join(dataDir, 'inspectorcam.db');
+  return dataDir;
+}
+
+function getDbPath() {
+  return path.join(getDataDir(), 'inspectorcam.db');
 }
 
 function getDb() {
@@ -83,4 +87,4 @@ function closeDb() {
   }
 }
 
-module.exports = { getDb, closeDb };
+module.exports = { getDb, closeDb, getDataDir };

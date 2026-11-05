@@ -14,6 +14,7 @@ const inspectorsRouter  = require('./routes/inspectors');
 const configRouter      = require('./routes/config');
 const inspectionsRouter = require('./routes/inspections');
 const uploadRouter      = require('./routes/upload');
+const clientLogRouter   = require('./routes/clientLog');
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -47,14 +48,18 @@ app.get('/', (req, res) => {
   }
 });
 
-// Serve PWA static — JS/CSS/HTML fără cache, iconuri pot fi cache-uite
+// Serve PWA static. JS/CSS cerute cu ?v=BUILD_ID (din index.html) sunt păstrate în
+// telefon: la redeschidere/reîncărcare se descarcă doar index.html, care e mic — mult
+// mai rapid pe Wi-Fi slab. BUILD_ID se schimbă la fiecare pornire a serverului, deci o
+// versiune nouă ajunge oricum pe telefon. Fără ?v= (cereri directe) — fără cache.
 app.use(express.static(PWA_PATH, {
   setHeaders(res, filePath) {
-    if (
-      filePath.endsWith('.js') ||
-      filePath.endsWith('.css') ||
-      filePath.endsWith('.html')
-    ) {
+    const isCode = filePath.endsWith('.js') || filePath.endsWith('.css');
+    if (isCode && res.req && res.req.query && res.req.query.v === BUILD_ID) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (filePath.includes(`${path.sep}fonts${path.sep}`)) {
+      res.setHeader('Cache-Control', 'public, max-age=2592000'); // fonturile nu se schimbă
+    } else if (isCode || filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-store');
     }
   },
@@ -65,6 +70,7 @@ app.use('/api/inspectors',   inspectorsRouter);
 app.use('/api/config',       configRouter);
 app.use('/api/inspections',  inspectionsRouter);
 app.use('/api/inspections',  uploadRouter);   // POST /api/inspections — upload
+app.use('/api/client-log',   clientLogRouter); // jurnal de diagnostic de la telefoane
 
 // Health check — util pentru a verifica că serverul e live
 app.get('/api/health', (req, res) => {

@@ -56,6 +56,7 @@ const App = (() => {
      ============================================================ */
   async function init() {
     show('screen-loading');
+    Diag.start();
     initCropEditor();
 
     // Restore session
@@ -63,6 +64,15 @@ const App = (() => {
       const saved = sessionStorage.getItem('itp-inspector');
       if (saved) state.inspector = JSON.parse(saved);
     } catch { /* ignore */ }
+
+    // Pagina a fost reîncărcată în timp ce camera era deschisă (iOS o închide din
+    // lipsă de memorie) → revenim la aceeași etapă, cu același inspector
+    const resume = readCaptureMark();
+    clearCaptureMark();
+    if (resume && !state.inspector && resume.inspector) {
+      state.inspector = resume.inspector;
+      try { sessionStorage.setItem('itp-inspector', JSON.stringify(resume.inspector)); } catch {}
+    }
 
     // F2: Restore active plates (supraviețuiesc sleep/reload)
     await loadActivePlates();
@@ -74,11 +84,16 @@ const App = (() => {
       ]);
 
       if (state.inspector) {
-        goHome();
+        if (resume && resume.inspector && resume.inspector.id === state.inspector.id && state.activePlates.has(resume.plate)) {
+          resumeAfterReload(resume);
+        } else {
+          goHome();
+        }
       } else {
         showLogin();
       }
     } catch (err) {
+      Diag.log('server_unreachable', { msg: String(err && err.message || err).slice(0, 120) });
       showOffline();
     }
 
@@ -241,6 +256,7 @@ const App = (() => {
 
   function logout() {
     // Cazurile netrimise rămân salvate în telefon — reapar la următoarea intrare
+    clearCaptureMark();
     state.activePlates.clear();
     state.currentPlate = null;
     sessionStorage.removeItem('itp-inspector');
@@ -260,6 +276,7 @@ const App = (() => {
   async function goHome() {
     if (cameraRunning) { Camera.stop(); cameraRunning = false; cameraMode = 'none'; }
     state.currentPlate = null;
+    clearCaptureMark();
 
     document.getElementById('home-station-name').textContent = state.config.station_name || 'InspectorCam';
     document.getElementById('home-inspector-name').textContent = state.inspector.name;
@@ -605,6 +622,40 @@ const App = (() => {
     }
   }
 
+  /* ---- revenire după reîncărcarea paginii în timpul fotografierii ---- */
+  const CAPTURE_MARK = 'itp-capture';
+  const CAPTURE_MARK_MS = 15 * 60 * 1000;
+
+  function setCaptureMark() {
+    const insp = currentInspection();
+    if (!insp || !state.inspector) return;
+    try {
+      localStorage.setItem(CAPTURE_MARK, JSON.stringify({
+        plate: state.currentPlate, step: insp.currentStep, inspector: state.inspector, ts: Date.now(),
+      }));
+    } catch {}
+  }
+
+  function clearCaptureMark() {
+    try { localStorage.removeItem(CAPTURE_MARK); } catch {}
+  }
+
+  function readCaptureMark() {
+    try {
+      const m = JSON.parse(localStorage.getItem(CAPTURE_MARK) || 'null');
+      return m && m.plate && Date.now() - m.ts < CAPTURE_MARK_MS ? m : null;
+    } catch { return null; }
+  }
+
+  function resumeAfterReload(mark) {
+    state.currentPlate = mark.plate;
+    const insp = currentInspection();
+    const idx = Math.min(Math.max(0, mark.step | 0), insp.activeSteps.length - 1);
+    Diag.log('resume_after_reload', { step: idx + 1, secSinceCamera: Math.round((Date.now() - mark.ts) / 1000) });
+    startStep(idx);
+    toast('Telefonul a reîncărcat aplicația în timpul fotografierii. Refaceți fotografia.', 'info');
+  }
+
   /* ---- alegerea fotografiei (camera nativă / galerie) ----
      Un singur <input type=file>, atașat permanent paginii. Pe iOS, un input creat
      doar în memorie poate fi șters cât timp camera e deschisă — poza nu mai ajunge
@@ -637,7 +688,10 @@ const App = (() => {
     else input.removeAttribute('capture');
     input.value = '';   // aceeași poză aleasă de două ori declanșează tot `change`
     if (pick) clearTimeout(pick.timer);
-    pick = { onFile, done: false, timer: 0 };
+    pick = { onFile, done: false, timer: 0, openedAt: Date.now() };
+    setCaptureMark();
+    const insp = currentInspection();
+    Diag.log(camera ? 'camera_open' : 'gallery_open', { step: insp ? insp.currentStep + 1 : null });
     input.click();
   }
 
@@ -647,16 +701,25 @@ const App = (() => {
     p.done = true;
     clearTimeout(p.timer);
     pick = null;
-    if (file) p.onFile(file);
-    else restoreCaptureUI();
+    clearCaptureMark();
+    const ms = Date.now() - p.openedAt;
+    if (file) {
+      Diag.log('photo_received', { ms, kb: Math.round((file.size || 0) / 1024), type: file.type || null });
+      p.onFile(file);
+    } else {
+      Diag.log('camera_closed_no_photo', { ms });
+      restoreCaptureUI();
+    }
   }
 
   function onPickReturn() {
     const p = pick;
     if (!p || p.done || document.visibilityState === 'hidden') return;
     clearTimeout(p.timer);
+    Diag.log('camera_return', { ms: Date.now() - p.openedAt });
     p.timer = setTimeout(() => {
       if (pick !== p || p.done) return;
+      Diag.log('no_photo_after_return', { ms: Date.now() - p.openedAt });
       // Nicio poză primită: arătăm din nou butonul de fotografiere. Alegerea
       // rămâne deschisă — dacă poza ajunge totuși mai târziu, e salvată.
       restoreCaptureUI();
@@ -696,15 +759,19 @@ const App = (() => {
 
     hideStepInstruction();
     setProcessing(true);
+    const t0 = Date.now();
     try {
       const raw = await Camera.fileToCanvas(file);
       await processAndSave(raw, { step, insp, source, watermark: buildWatermark(source === 'import') });
+      Diag.log('photo_saved', { ms: Date.now() - t0, w: raw.width, h: raw.height });
       if (source === 'import') toast('Fotografie importată și marcată.', 'success');
     } catch (err) {
+      Diag.log('photo_error', { ms: Date.now() - t0, msg: String(err && err.message || err).slice(0, 160) });
       toast(err.message || 'Fotografia nu a putut fi salvată. Încercați din nou.', 'error');
     } finally {
       setProcessing(false);
       restoreCaptureUI();
+      Diag.flush();
     }
   }
 
@@ -1407,13 +1474,16 @@ const App = (() => {
         }
       }
       cleanup();
+      Diag.log('submit_ok', { photos: payload.photos.length });
       showSuccess(result.inspection, false);
-    } catch {
+    } catch (sendErr) {
+      Diag.log('submit_failed', { photos: payload.photos.length, msg: String(sendErr && sendErr.message || sendErr).slice(0, 120) });
       try {
         await Storage.savePending(payload);
         cleanup();
         showSuccess({ plate: payload.plate, photos_saved: payload.photos.length }, true);
       } catch (saveErr) {
+        Diag.log('local_save_failed', { msg: String(saveErr && saveErr.message || saveErr).slice(0, 120) });
         toast('Eroare la salvarea locală: ' + saveErr.message, 'error');
         btn.disabled = false;
         btn.textContent = 'Trimite la calculator';
