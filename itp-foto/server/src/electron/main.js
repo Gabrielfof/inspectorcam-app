@@ -142,40 +142,63 @@ async function startMainApp() {
 
 // Pe Mac lansează un shell script care înlocuiește .app DUPĂ ce procesul curent se închide.
 // Ocolim complet quitAndInstall (care eșuează silențios pe Mac fără code signing).
+//
+// Înlocuirea e sigură: aplicația nouă se copiază întâi lângă cea veche, apoi se fac
+// două redenumiri (veche → deoparte, nouă → la loc). Redenumirea către un nume care
+// nu există nu poate pune niciodată aplicația „în interiorul” celei vechi (versiunile
+// ≤ 1.5.5 făceau rm -rf + cp -R, iar două instalări simultane lăsau
+// InspectorCam.app/InspectorCam.app — „damaged or incomplete”).
+function macUpdateScript(zipPath, appBundle) {
+  return [
+    '#!/bin/bash',
+    `ZIPPATH="${zipPath}"`,
+    `APPBUNDLE="${appBundle}"`,
+    // O singură instalare odată
+    'LOCK="${TMPDIR:-/tmp}/inspectorcam_update.lock"',
+    'if ! mkdir "$LOCK" 2>/dev/null; then',
+    // incuietoare ramasa de la o instalare intrerupta (mai veche de 10 minute) → o refolosim
+    '  [ $(( $(date +%s) - $(stat -f %m "$LOCK" 2>/dev/null || date +%s) )) -gt 600 ] || exit 0',
+    '  rmdir "$LOCK" 2>/dev/null; mkdir "$LOCK" 2>/dev/null || exit 0',
+    'fi',
+    'TMPDIR_EXTRACT=""',
+    'trap \'rm -rf "$TMPDIR_EXTRACT"; rmdir "$LOCK" 2>/dev/null\' EXIT',
+    // Asteapta inchiderea tuturor proceselor aplicatiei (principal + helpere), max 30 secunde
+    'for i in $(seq 1 30); do',
+    '  pgrep -f "$APPBUNDLE/Contents/" > /dev/null || break',
+    '  sleep 1',
+    'done',
+    '[ -f "$ZIPPATH" ] || exit 1',
+    '[ -d "$APPBUNDLE" ] || exit 1',
+    // Extrage arhiva si verifica aplicatia noua
+    'TMPDIR_EXTRACT=$(mktemp -d)',
+    'ditto -x -k "$ZIPPATH" "$TMPDIR_EXTRACT" || { open "$APPBUNDLE"; exit 1; }',
+    'NEWAPP=$(find "$TMPDIR_EXTRACT" -maxdepth 2 -type d -name "*.app" | head -1)',
+    '[ -n "$NEWAPP" ] && [ -f "$NEWAPP/Contents/Info.plist" ] && [ -d "$NEWAPP/Contents/MacOS" ] || { open "$APPBUNDLE"; exit 1; }',
+    // Copie langa aplicatia veche, apoi redenumiri
+    'STAGE="${APPBUNDLE%.app}.update-$$.app"',
+    'OLD="${APPBUNDLE%.app}.old-$$.app"',
+    'rm -rf "$STAGE" "$OLD"',
+    'ditto "$NEWAPP" "$STAGE" || { rm -rf "$STAGE"; open "$APPBUNDLE"; exit 1; }',
+    'mv "$APPBUNDLE" "$OLD" || { rm -rf "$STAGE"; open "$APPBUNDLE"; exit 1; }',
+    'if mv "$STAGE" "$APPBUNDLE"; then',
+    '  rm -rf "$OLD"',
+    'else',
+    '  mv "$OLD" "$APPBUNDLE"',
+    '  rm -rf "$STAGE"',
+    'fi',
+    // Elimina Gatekeeper quarantine (esential pe Mac fara code signing)
+    'xattr -rd com.apple.quarantine "$APPBUNDLE" 2>/dev/null || true',
+    // Porneste aplicatia (noua sau, la eroare, cea veche)
+    'open "$APPBUNDLE"',
+  ].join('\n');
+}
+
 function launchMacUpdateScript(zipPath, appBundle) {
   if (!zipPath || !appBundle) return false;
   const { spawn } = require('child_process');
-  const scriptPath = path.join(os.tmpdir(), 'inspectorcam_update.sh');
-  const script = [
-    '#!/bin/bash',
-    // Asteapta sa se inchida procesul curent (max 30 secunde)
-    'for i in $(seq 1 30); do',
-    '  pgrep -x "InspectorCam" > /dev/null || break',
-    '  sleep 1',
-    'done',
-    `ZIPPATH="${zipPath}"`,
-    `APPBUNDLE="${appBundle}"`,
-    '[ -f "$ZIPPATH" ] || exit 1',
-    '[ -d "$APPBUNDLE" ] || exit 1',
-    // Extrage zip
-    'TMPDIR_EXTRACT=$(mktemp -d)',
-    'unzip -q "$ZIPPATH" -d "$TMPDIR_EXTRACT" 2>/dev/null || exit 1',
-    // Gaseste .app extras
-    'NEWAPP=$(find "$TMPDIR_EXTRACT" -maxdepth 3 -name "*.app" | head -1)',
-    '[ -n "$NEWAPP" ] || exit 1',
-    // Inlocuieste bundle-ul curent
-    'rm -rf "$APPBUNDLE"',
-    'cp -R "$NEWAPP" "$APPBUNDLE"',
-    // Elimina Gatekeeper quarantine (esential pe Mac fara code signing)
-    'xattr -rd com.apple.quarantine "$APPBUNDLE" 2>/dev/null || true',
-    // Curata tmp
-    'rm -rf "$TMPDIR_EXTRACT"',
-    // Porneste noua versiune
-    'open "$APPBUNDLE"',
-  ].join('\n');
-
+  const scriptPath = path.join(os.tmpdir(), `inspectorcam_update_${process.pid}.sh`);
   try {
-    fs.writeFileSync(scriptPath, script, { mode: 0o755 });
+    fs.writeFileSync(scriptPath, macUpdateScript(zipPath, appBundle), { mode: 0o755 });
     const child = spawn('bash', [scriptPath], { detached: true, stdio: 'ignore' });
     child.unref();
     console.log('[updater] Script update Mac lansat:', scriptPath);
@@ -186,7 +209,13 @@ function launchMacUpdateScript(zipPath, appBundle) {
   }
 }
 
+// Instalarea pornește o singură dată — butonul „Repornește acum” și pornirea
+// automată după 8 secunde pot veni aproape simultan
+let installStarted = false;
+
 function triggerInstall() {
+  if (installStarted) return;
+  installStarted = true;
   app.isQuitting = true;
 
   if (process.platform === 'darwin') {

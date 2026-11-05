@@ -21,7 +21,11 @@ fi
 echo ""
 echo "[1/5] Se opreste InspectorCam..."
 pkill -x "InspectorCam" 2>/dev/null
-sleep 2
+# Asteapta inchiderea tuturor proceselor aplicatiei (principal + helpere), max 30 secunde
+for i in $(seq 1 30); do
+  pgrep -f "InspectorCam.app/Contents/" > /dev/null || break
+  sleep 1
+done
 
 echo "[2/5] Se cauta ultima versiune..."
 API_RESPONSE=$(curl -s "https://api.github.com/repos/Gabrielfof/inspectorcam-app/releases/latest")
@@ -71,10 +75,10 @@ fi
 echo ""
 echo "[4/5] Se instaleaza..."
 TMP_DIR=$(mktemp -d)
-unzip -q "$TMP_ZIP" -d "$TMP_DIR" 2>/dev/null
-NEW_APP=$(find "$TMP_DIR" -maxdepth 3 -name "*.app" | head -1)
+ditto -x -k "$TMP_ZIP" "$TMP_DIR" 2>/dev/null
+NEW_APP=$(find "$TMP_DIR" -maxdepth 2 -type d -name "*.app" | head -1)
 
-if [ -z "$NEW_APP" ]; then
+if [ -z "$NEW_APP" ] || [ ! -f "$NEW_APP/Contents/Info.plist" ]; then
   echo "EROARE: Aplicatia nu a fost gasita in arhiva."
   rm -rf "$TMP_DIR" "$TMP_ZIP"
   read -p "Apasati Enter pentru a inchide..."
@@ -86,8 +90,27 @@ TARGET=$(find /Applications ~/Applications -maxdepth 1 -name "InspectorCam.app" 
 TARGET="${TARGET:-/Applications/InspectorCam.app}"
 
 echo "Instalare in: $TARGET"
-rm -rf "$TARGET"
-cp -R "$NEW_APP" "$TARGET"
+# Copie langa aplicatia veche, apoi redenumiri — aplicatia noua nu poate ajunge
+# niciodata „in interiorul” celei vechi; repara si o aplicatie deja deteriorata
+STAGE="${TARGET%.app}.update-$$.app"
+OLD="${TARGET%.app}.old-$$.app"
+rm -rf "$STAGE" "$OLD"
+if ! ditto "$NEW_APP" "$STAGE"; then
+  echo "EROARE: Copierea aplicatiei a esuat."
+  rm -rf "$STAGE" "$TMP_DIR" "$TMP_ZIP"
+  read -p "Apasati Enter pentru a inchide..."
+  exit 1
+fi
+[ -e "$TARGET" ] && mv "$TARGET" "$OLD"
+if mv "$STAGE" "$TARGET"; then
+  rm -rf "$OLD"
+else
+  [ -e "$OLD" ] && mv "$OLD" "$TARGET"
+  rm -rf "$STAGE" "$TMP_DIR" "$TMP_ZIP"
+  echo "EROARE: Instalarea a esuat. Aplicatia anterioara a fost pastrata."
+  read -p "Apasati Enter pentru a inchide..."
+  exit 1
+fi
 
 # Elimina restrictia Gatekeeper (esential pe Mac fara semnatura digitala)
 xattr -rd com.apple.quarantine "$TARGET" 2>/dev/null || true
