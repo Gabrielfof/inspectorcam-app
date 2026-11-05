@@ -3,3 +3,4 @@ dist/
 *.DS_Store
 itp-foto/server/src/pwa-source-path.json
 itp-foto/server/node_modules/
+itp-foto/server/build-resources/release-notes.md
