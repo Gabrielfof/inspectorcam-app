@@ -588,32 +588,111 @@ const App = (() => {
     }
   }
 
-  function captureViaFileInput() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'environment';
-    input.onchange = async () => {
-      const file = input.files[0];
-      if (!file) return;
+  /* ---- alegerea fotografiei (camera nativă / galerie) ----
+     Un singur <input type=file>, atașat permanent paginii. Pe iOS, un input creat
+     doar în memorie poate fi șters cât timp camera e deschisă — poza nu mai ajunge
+     în aplicație și rămâne ecranul negru. */
+  let fileInput = null;
+  let pick = null;          // alegerea în curs: { onFile, done, timer }
+  const PICK_RETURN_MS = 2000;
 
-      // Capturăm referința ÎNAINTE de orice await — dacă userul dă back sau
-      // închide telefonul în timp ce se procesează, inspecția rămâne accesibilă
-      const insp = currentInspection();
-      if (!insp) return;
-      const step = insp.activeSteps[insp.currentStep];
-      if (!step) return;
+  function getFileInput() {
+    if (fileInput) return fileInput;
+    fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.tabIndex = -1;
+    fileInput.setAttribute('aria-hidden', 'true');
+    fileInput.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;';
+    fileInput.addEventListener('change', () => finishPick(fileInput.files && fileInput.files[0]));
+    // Camera închisă fără poză (browsere noi)
+    fileInput.addEventListener('cancel', () => finishPick(null));
+    document.body.appendChild(fileInput);
+    // Revenirea din cameră — dacă nu vine niciun rezultat, refacem ecranul
+    document.addEventListener('visibilitychange', onPickReturn);
+    window.addEventListener('focus', onPickReturn);
+    return fileInput;
+  }
 
-      hideStepInstruction();
-      toast('Se procesează…', 'info');
-      try {
-        const raw = await Camera.fileToCanvas(file);
-        await processAndSave(raw, { step, insp, source: 'camera', watermark: buildWatermark() });
-      } catch (err) {
-        toast(err.message, 'error');
-      }
-    };
+  function pickFile(camera, onFile) {
+    const input = getFileInput();
+    if (camera) input.setAttribute('capture', 'environment');
+    else input.removeAttribute('capture');
+    input.value = '';   // aceeași poză aleasă de două ori declanșează tot `change`
+    if (pick) clearTimeout(pick.timer);
+    pick = { onFile, done: false, timer: 0 };
     input.click();
+  }
+
+  function finishPick(file) {
+    const p = pick;
+    if (!p || p.done) return;
+    p.done = true;
+    clearTimeout(p.timer);
+    pick = null;
+    if (file) p.onFile(file);
+    else restoreCaptureUI();
+  }
+
+  function onPickReturn() {
+    const p = pick;
+    if (!p || p.done || document.visibilityState === 'hidden') return;
+    clearTimeout(p.timer);
+    p.timer = setTimeout(() => {
+      if (pick !== p || p.done) return;
+      // Nicio poză primită: arătăm din nou butonul de fotografiere. Alegerea
+      // rămâne deschisă — dacă poza ajunge totuși mai târziu, e salvată.
+      restoreCaptureUI();
+    }, PICK_RETURN_MS);
+  }
+
+  /* Fără ecran negru: etapa are deja poză → o afișăm (ex. „Refă” anulat);
+     altfel → butonul de fotografiere */
+  function restoreCaptureUI() {
+    const insp = currentInspection();
+    if (!insp || processingCount > 0) return;
+    if (!document.getElementById('screen-camera').classList.contains('active')) return;
+    const step = insp.activeSteps[insp.currentStep];
+    if (!step) return;
+    const existing = insp.photos.find(p => p.step === step.id && !p.uploaded);
+    if (existing) {
+      if (document.getElementById('preview-img').classList.contains('hidden')) showPreview(existing.blob);
+      return;
+    }
+    if (cameraMode === 'fileinput') {
+      showStepInstruction(insp.currentStep + 1, insp.activeSteps.length, `Etapa ${insp.currentStep + 1}`);
+    }
+  }
+
+  let processingCount = 0;
+  function setProcessing(on) {
+    processingCount = Math.max(0, processingCount + (on ? 1 : -1));
+    document.getElementById('capture-processing').classList.toggle('hidden', processingCount === 0);
+  }
+
+  /* Procesează și salvează poza aleasă; la orice eroare revine butonul de fotografiere */
+  async function handlePickedFile(file, source) {
+    const insp = currentInspection();
+    if (!insp) return;
+    const step = insp.activeSteps[insp.currentStep];
+    if (!step) return;
+
+    hideStepInstruction();
+    setProcessing(true);
+    try {
+      const raw = await Camera.fileToCanvas(file);
+      await processAndSave(raw, { step, insp, source, watermark: buildWatermark(source === 'import') });
+      if (source === 'import') toast('Fotografie importată și marcată.', 'success');
+    } catch (err) {
+      toast(err.message || 'Fotografia nu a putut fi salvată. Încercați din nou.', 'error');
+    } finally {
+      setProcessing(false);
+      restoreCaptureUI();
+    }
+  }
+
+  function captureViaFileInput() {
+    pickFile(true, file => handlePickedFile(file, 'camera'));
   }
 
   async function capturePhoto() {
@@ -629,31 +708,8 @@ const App = (() => {
     }
   }
 
-  async function importFromGallery() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-
-    input.onchange = async () => {
-      const file = input.files[0];
-      if (!file) return;
-
-      const insp = currentInspection();
-      if (!insp) return;
-      const step = insp.activeSteps[insp.currentStep];
-      if (!step) return;
-
-      toast('Se procesează imaginea…', 'info');
-      try {
-        const raw = await Camera.fileToCanvas(file);
-        await processAndSave(raw, { step, insp, source: 'import', watermark: buildWatermark(true) });
-        toast('Fotografie importată și marcată.', 'success');
-      } catch (err) {
-        toast(err.message, 'error');
-      }
-    };
-
-    input.click();
+  function importFromGallery() {
+    pickFile(false, file => handlePickedFile(file, 'import'));
   }
 
   /* Aplică watermark-ul și salvează. Poza originală (fără watermark) se păstrează
