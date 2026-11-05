@@ -11,7 +11,11 @@ const MAX_BYTES  = 2 * 1024 * 1024;   // peste 2 MB → jurnalul vechi devine .1
 const MAX_EVENTS = 300;
 
 function logPath() {
-  return path.join(getDataDir(), 'jurnal-telefoane.log');
+  const file = path.join(getDataDir(), 'raport-tehnic.log');
+  // Versiunile 1.5.7–1.5.8 scriau în jurnal-telefoane.log — îl preluăm
+  const old = path.join(getDataDir(), 'jurnal-telefoane.log');
+  try { if (!fs.existsSync(file) && fs.existsSync(old)) fs.renameSync(old, file); } catch {}
+  return file;
 }
 
 const short = (v, n) => String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').slice(0, n);

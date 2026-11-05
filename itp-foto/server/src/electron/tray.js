@@ -26,7 +26,7 @@ function createTray(app, mainWindow, openSettings, quit, serverInfo) {
     },
     {
       // Jurnalul de diagnostic trimis de telefoane (ex. pentru „ecran negru”)
-      label: 'Jurnal telefoane (diagnostic)',
+      label: 'Raport tehnic',
       click: () => {
         const { shell } = require('electron');
         shell.showItemInFolder(require('../routes/clientLog').ensureLogFile());
