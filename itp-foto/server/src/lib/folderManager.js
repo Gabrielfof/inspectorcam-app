@@ -81,24 +81,6 @@ function getPhotoFilename(plate, seqNum) {
 }
 
 /**
- * Scrie fișierul metadata.json în folderul inspecției.
- *
- * @param {string} folderPath - Calea folderului
- * @param {object} metadata   - Obiectul de metadate
- */
-function writeMetadata(folderPath, metadata) {
-  const filePath = path.join(folderPath, '.metadata.json');
-  // Append-mode: citim fișierul existent (dacă există) și adăugăm inspecția
-  let existing = [];
-  if (fs.existsSync(filePath)) {
-    try { existing = JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch {}
-    if (!Array.isArray(existing)) existing = [existing];
-  }
-  existing.push(metadata);
-  fs.writeFileSync(filePath, JSON.stringify(existing, null, 2), 'utf8');
-}
-
-/**
  * Returnează calea destinație a unui fișier foto.
  *
  * @param {string} folderPath - Calea folderului
@@ -125,7 +107,6 @@ module.exports = {
   createInspectionFolder,
   getNextPhotoNumber,
   getPhotoFilename,
-  writeMetadata,
   getPhotoPath,
   listFoldersForDate,
   getRootFolder,

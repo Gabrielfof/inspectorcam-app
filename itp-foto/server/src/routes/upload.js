@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const { getDb } = require('../lib/database');
-const { createInspectionFolder, getNextPhotoNumber, getPhotoFilename, writeMetadata, getPhotoPath } = require('../lib/folderManager');
+const { createInspectionFolder, getNextPhotoNumber, getPhotoFilename, getPhotoPath } = require('../lib/folderManager');
 
 const router = Router();
 
@@ -54,10 +54,6 @@ router.post('/', upload.array('files'), (req, res) => {
       return res.status(400).json({ ok: false, eroare: 'Inspectorul nu există sau este inactiv.' });
     }
 
-    const configRows = db.prepare("SELECT key, value FROM config").all();
-    const config = {};
-    configRows.forEach(r => { config[r.key] = r.value; });
-
     const inspDate = datetime ? new Date(datetime) : new Date();
     const folderPath = createInspectionFolder(plate.trim(), inspDate);
 
@@ -96,29 +92,8 @@ router.post('/', upload.array('files'), (req, res) => {
 
     const inspectionId = uuidv4();
 
-    const metadata = {
-      id: inspectionId,
-      plate: plate.trim(),
-      datetime: inspDate.toISOString(),
-      inspector: { name: inspector.name, id: inspector.id },
-      station: {
-        name: config.station_name || 'Stația ITP',
-        rar_code: config.station_rar_code || '',
-      },
-      photos: savedPhotos.map(p => ({
-        step: p.step,
-        filename: p.filename,
-        ocr_detected_plate: p.ocr_plate,
-        timestamp: p.timestamp,
-        note: p.note || '',
-        source: p.source,
-      })),
-      notes: notes || '',
-      device_id: device_id || '',
-      app_version: app_version || '1.0.0',
-    };
-
-    writeMetadata(folderPath, metadata);
+    // Datele inspecției se salvează doar în baza de date — fără fișier .metadata.json
+    // în folderul cu poze (pe Windows apărea lângă fotografii și încurca clienții)
 
     // Salvare în baza de date (transaction atomică)
     const insertInspection = db.prepare(`
