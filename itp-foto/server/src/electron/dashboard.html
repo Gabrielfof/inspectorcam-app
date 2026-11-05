@@ -285,13 +285,6 @@
     line-height: 1.5;
   }
   .update-modal-notes li + li { margin-top: 6px; }
-  .update-modal-notes-label {
-    text-align: left;
-    font-size: 12px;
-    font-weight: 700;
-    color: #fff;
-    margin: 0 0 16px;
-  }
   .update-modal-countdown {
     font-size: 13px;
     color: var(--success);
@@ -350,8 +343,6 @@
       Versiunea <strong id="update-modal-version">—</strong> a fost descărcată.<br>
       Aplicația va reporni automat în câteva secunde.
     </div>
-    <div class="update-modal-notes-label" id="update-modal-notes-label" hidden>Ce este nou:</div>
-    <ul class="update-modal-notes" id="update-modal-notes" hidden></ul>
     <div class="update-modal-countdown" id="update-modal-countdown">Se repornește în 8 secunde…</div>
     <button class="update-modal-btn" onclick="installNow()">Repornește acum →</button>
   </div>
@@ -612,13 +603,6 @@ ipcRenderer.on('update-downloaded', (_, info) => {
   // Ascunde bara mică și arată dialogul mare
   document.getElementById('bar-update-ready').style.display = 'none';
   document.getElementById('update-modal-version').textContent = `v${info.version}`;
-  const notes = Array.isArray(info.notes) ? info.notes : [];
-  if (notes.length) {
-    fillNotes(document.getElementById('update-modal-notes'), notes);
-    document.getElementById('update-modal-notes').hidden = false;
-    document.getElementById('update-modal-notes-label').hidden = false;
-    ipcRenderer.send('update-notes-shown', info.version);
-  }
   document.getElementById('update-overlay').classList.add('show');
 
   // Countdown 8 → 0
@@ -636,7 +620,7 @@ ipcRenderer.on('update-downloaded', (_, info) => {
   }, 1000);
 });
 
-// Text simplu (fără HTML) — notele vin din release-ul GitHub
+// Lista de noutăți, ca text simplu
 function fillNotes(ul, notes) {
   ul.innerHTML = '';
   notes.forEach(n => {

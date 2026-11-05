@@ -12,11 +12,6 @@ directories:
   output: ../../dist
   buildResources: build-resources
 
-# Notele versiunii (generate din src/electron/release-notes.json) — apar în
-# release-ul GitHub și în fereastra de actualizare a clienților
-releaseInfo:
-  releaseNotesFile: build-resources/release-notes.md
-
 files:
   - src/**/*
   - "!src/**/*.test.js"

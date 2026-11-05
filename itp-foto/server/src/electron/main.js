@@ -226,7 +226,7 @@ function setupAutoUpdater() {
     console.log('[updater] Descărcare completă:', info.version);
     pendingUpdateFile = info.downloadedFile || null;
     console.log('[updater] Fișier descărcat:', pendingUpdateFile);
-    if (mainWindow) mainWindow.webContents.send('update-downloaded', { version: info.version, notes: normalizeReleaseNotes(info.releaseNotes) });
+    if (mainWindow) mainWindow.webContents.send('update-downloaded', { version: info.version });
     // Instalare automată după 8 secunde
     setTimeout(triggerInstall, 8000);
   });
@@ -389,8 +389,7 @@ async function quit() {
 
 // ── Noutățile versiunii ───────────────────────────────────────────────────────
 
-// Starea versiunilor: ultima versiune pornită și pentru ce versiune s-au arătat
-// deja noutățile (în fereastra de actualizare, înainte de repornire)
+// Ultima versiune pornită — ca să știm când aplicația tocmai a fost actualizată
 function versionStatePath() {
   return path.join(app.getPath('userData'), 'version-state.json');
 }
@@ -403,21 +402,6 @@ function writeVersionState(state) {
   try { fs.writeFileSync(versionStatePath(), JSON.stringify(state)); } catch {}
 }
 
-// Notele din release-ul GitHub (HTML sau text) → listă scurtă de rânduri
-function normalizeReleaseNotes(raw) {
-  if (Array.isArray(raw)) raw = raw.map(n => (n && n.note) || '').join('\n');
-  if (typeof raw !== 'string' || !raw.trim()) return [];
-  return raw
-    .replace(/<\/(li|p|div)>|<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-    .split('\n')
-    .map(l => l.replace(/^\s*[-*•]\s*/, '').trim())
-    .filter(Boolean)
-    .slice(0, 6)
-    .map(l => l.slice(0, 220));
-}
-
 // Clienții care au avut deja aplicația (spre deosebire de o instalare nouă)
 function hasExistingData() {
   try {
@@ -427,8 +411,7 @@ function hasExistingData() {
   } catch { return false; }
 }
 
-// O singură dată după actualizare: noutățile versiunii curente — dacă nu au fost
-// deja arătate în fereastra de actualizare (versiunile ≤ 1.5.4 nu le arătau)
+// O singură dată, la prima pornire după actualizare: noutățile versiunii curente
 ipcMain.handle('get-whats-new', () => {
   try {
     const current = app.getVersion();
@@ -436,17 +419,12 @@ ipcMain.handle('get-whats-new', () => {
     const last = state.lastVersion || null;
     if (last === current) return null;
     writeVersionState({ ...state, lastVersion: current });
-    if (state.notesShownFor === current) return null;
     if (!last && !hasExistingData()) return null;   // instalare nouă
     const notes = require('./release-notes.json')[current];
     return Array.isArray(notes) && notes.length ? { version: current, notes } : null;
   } catch {
     return null;
   }
-});
-
-ipcMain.on('update-notes-shown', (_, version) => {
-  writeVersionState({ ...readVersionState(), notesShownFor: version });
 });
 
 // ── IPC ───────────────────────────────────────────────────────────────────────
