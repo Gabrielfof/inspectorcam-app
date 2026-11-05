@@ -46,5 +46,13 @@ router.post('/', (req, res) => {
   }
 });
 
+// Calea jurnalului, creat gol dacă nu există încă (ca să poată fi deschis din meniu)
+function ensureLogFile() {
+  const file = logPath();
+  try { fs.appendFileSync(file, ''); } catch {}
+  return file;
+}
+
 module.exports = router;
 module.exports.logPath = logPath;
+module.exports.ensureLogFile = ensureLogFile;

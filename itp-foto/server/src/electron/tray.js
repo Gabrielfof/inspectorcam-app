@@ -29,9 +29,7 @@ function createTray(app, mainWindow, openSettings, quit, serverInfo) {
       label: 'Jurnal telefoane (diagnostic)',
       click: () => {
         const { shell } = require('electron');
-        const file = require('../routes/clientLog').logPath();
-        try { require('fs').appendFileSync(file, ''); } catch {}   // există și înainte de primul eveniment
-        shell.showItemInFolder(file);
+        shell.showItemInFolder(require('../routes/clientLog').ensureLogFile());
       },
     },
     { label: 'Setări', click: openSettings },

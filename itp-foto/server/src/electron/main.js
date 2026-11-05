@@ -511,6 +511,11 @@ ipcMain.on('open-itp-folder', () => {
 
 ipcMain.on('open-settings', (event, tab) => openSettings(tab));
 
+// Jurnalul de diagnostic trimis de telefoane — deschis în Finder / Explorer
+ipcMain.on('open-client-log', () => {
+  shell.showItemInFolder(require('../routes/clientLog').ensureLogFile());
+});
+
 ipcMain.on('quit-app', quit);
 
 // ── Auto-sync PWA ─────────────────────────────────────────────────────────────

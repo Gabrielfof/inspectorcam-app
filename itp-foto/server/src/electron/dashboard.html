@@ -316,6 +316,17 @@
     justify-content: space-between;
   }
   #last-refresh { }
+  .footer-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: var(--muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+  .footer-link:hover { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -438,6 +449,7 @@
 
   <div class="footer">
     <span>InspectorCam v<span id="app-version">1.0.0</span></span>
+    <button class="footer-link" onclick="openClientLog()" title="Jurnalul de diagnostic trimis de telefoane">Jurnal telefoane</button>
     <span id="last-refresh"></span>
   </div>
 </main>
@@ -559,6 +571,7 @@ function esc(s) {
 function openInspectors() { ipcRenderer.send('open-settings', 'tab-inspectors'); }
 function openSettings()   { ipcRenderer.send('open-settings'); }
 function openFolder()     { ipcRenderer.send('open-itp-folder'); }
+function openClientLog()  { ipcRenderer.send('open-client-log'); }
 function quitApp()        { ipcRenderer.send('quit-app'); }
 async function installUpdate() { installNow(); }
 
