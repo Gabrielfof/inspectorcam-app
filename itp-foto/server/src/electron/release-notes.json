@@ -8,5 +8,11 @@
     "Rezolvată problema ecranului negru după fotografiere: poza nu se mai pierde, iar dacă închideți camera fără poză, butonul de fotografiere reapare.",
     "În timp ce poza se procesează apare mesajul „Se procesează fotografia…”.",
     "Fereastra de actualizare arată acum, pe scurt, ce s-a îmbunătățit în fiecare versiune."
+  ],
+  "1.5.7": [
+    "Cazurile netrimise nu se mai pierd la „Schimbă inspector”: fiecare inspector își regăsește cazurile când intră din nou.",
+    "Aplicația se afișează corect și cu telefonul ținut orizontal.",
+    "Aplicația se deschide mai repede pe telefon, chiar și cu Wi-Fi slab.",
+    "Dacă telefonul reîncarcă aplicația în timpul fotografierii, revii direct la cazul și etapa la care erai."
   ]
 }
