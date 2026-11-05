@@ -65,24 +65,7 @@ const App = (() => {
     } catch { /* ignore */ }
 
     // F2: Restore active plates (supraviețuiesc sleep/reload)
-    try {
-      const savedPlates = await Storage.getActivePlates();
-      for (const insp of savedPlates) {
-        // Repară pozele: reconstituie blob din dataUrl dacă blob-ul e invalid,
-        // sau generează dataUrl dacă lipseşte — evită "?" după reload iOS
-        for (const photo of (insp.photos || [])) {
-          if (photo.dataUrl && (!(photo.blob instanceof Blob) || photo.blob.size === 0)) {
-            try {
-              photo.blob = await fetch(photo.dataUrl).then(r => r.blob());
-              photo.baseBlob = photo.blob;
-            } catch { /* lasăm blob-ul invalid, va fi filtrat la upload */ }
-          } else if (!photo.dataUrl && photo.blob instanceof Blob && photo.blob.size > 0) {
-            photo.dataUrl = await blobToDataUrl(photo.blob);
-          }
-        }
-        state.activePlates.set(insp.plate, insp);
-      }
-    } catch { /* ignore */ }
+    await loadActivePlates();
 
     try {
       [state.config, state.inspectors] = await Promise.all([
@@ -216,14 +199,48 @@ const App = (() => {
     setTimeout(() => pinInput.focus(), 350);
   }
 
-  function loginAs(inspector) {
+  async function loginAs(inspector) {
     state.inspector = inspector;
     sessionStorage.setItem('itp-inspector', JSON.stringify(inspector));
     stopLoginClock();
+    await loadActivePlates();
     goHome();
   }
 
+  /* Cazurile netrimise ale inspectorului curent, din memoria telefonului.
+     Fiecare caz rămâne salvat la „Schimbă inspector” și reapare când intră
+     din nou inspectorul care l-a început. */
+  async function loadActivePlates() {
+    state.activePlates.clear();
+    if (!state.inspector) return;
+    let saved = [];
+    try { saved = await Storage.getActivePlates(); } catch { return; }
+    for (const insp of saved) {
+      // Cazurile altui inspector rămân salvate, dar nu se afișează aici
+      if (insp.inspectorId && insp.inspectorId !== state.inspector.id) continue;
+      // Cazuri începute înainte de marcarea inspectorului — preluate de inspectorul curent
+      if (!insp.inspectorId) {
+        insp.inspectorId = state.inspector.id;
+        Storage.saveActivePlate(insp).catch(() => {});
+      }
+      // Repară pozele: reconstituie blob din dataUrl dacă blob-ul e invalid,
+      // sau generează dataUrl dacă lipseşte — evită "?" după reload iOS
+      for (const photo of (insp.photos || [])) {
+        try {
+          if (photo.dataUrl && (!(photo.blob instanceof Blob) || photo.blob.size === 0)) {
+            photo.blob = await fetch(photo.dataUrl).then(r => r.blob());
+            photo.baseBlob = photo.blob;
+          } else if (!photo.dataUrl && photo.blob instanceof Blob && photo.blob.size > 0) {
+            photo.dataUrl = await blobToDataUrl(photo.blob);
+          }
+        } catch { /* lasăm blob-ul invalid, va fi filtrat la upload */ }
+      }
+      if (!state.activePlates.has(insp.plate)) state.activePlates.set(insp.plate, insp);
+    }
+  }
+
   function logout() {
+    // Cazurile netrimise rămân salvate în telefon — reapar la următoarea intrare
     state.activePlates.clear();
     state.currentPlate = null;
     sessionStorage.removeItem('itp-inspector');
@@ -231,7 +248,6 @@ const App = (() => {
     Camera.stop();
     cameraRunning = false;
     cameraMode = 'none';
-    Storage.clearActivePlates().catch(() => {});
     showLogin();
   }
 
@@ -443,6 +459,7 @@ const App = (() => {
       currentStep:          0,
       activeSteps:          getActiveSteps(),
       appendToInspectionId: null,
+      inspectorId:          state.inspector.id,
     };
     state.activePlates.set(raw, insp);
     state.currentPlate = raw;
@@ -1520,6 +1537,7 @@ const App = (() => {
       currentStep:          startIdx,
       activeSteps:          activeSteps,
       appendToInspectionId: inspectionId || null,
+      inspectorId:          state.inspector.id,
     };
     state.activePlates.set(plate, insp);
     state.currentPlate = plate;

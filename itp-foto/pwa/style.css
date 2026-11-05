@@ -1777,3 +1777,101 @@ html, body {
   gap: 12px;
   padding: 14px 18px 18px;
 }
+
+/* ============================================================
+   Telefon ținut orizontal (landscape) — orice model, iOS sau Android.
+   Doar pentru ecrane joase; pe vertical și pe tablete nu se schimbă nimic.
+   ============================================================ */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Decupajul ecranului (notch / insula) e acum în lateral */
+  .screen {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Ecranele cu conținut se derulează în loc să taie din el */
+  #screen-login,
+  #screen-home,
+  #screen-plate,
+  #screen-success {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Pagina principală se derulează întreagă: cazurile netrimise + lista „Azi” */
+  #screen-home .home-body { flex: none; overflow: visible; }
+
+  /* Conținut pe o coloană lizibilă, centrată, nu întins pe toată lățimea */
+  .login-brand,
+  .login-datetime,
+  .login-section-label,
+  #inspector-list,
+  #active-plates-section > *,
+  .home-body > *,
+  .confirm-body > *,
+  #screen-plate > *,
+  #screen-success > * {
+    width: 100%;
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .btn-new-plate { padding: 14px; }
+
+  /* Login — mai compact */
+  .login-brand { padding: 14px 24px 10px; flex-direction: row; justify-content: center; gap: 12px; }
+  .login-logo { width: 44px; height: 44px; border-radius: 12px; }
+
+  /* Număr de înmatriculare — butonul nu mai iese din ecran */
+  #screen-plate { padding-top: calc(var(--safe-top) + 16px); padding-bottom: 24px; }
+  .plate-back { padding-bottom: 12px; }
+
+  /* „Salvat!” — centrat când încape, derulabil când nu (fără tăiere sus) */
+  #screen-success { justify-content: flex-start; padding-top: 20px; }
+  #screen-success > :first-child { margin-top: auto; }
+  #screen-success > :last-child { margin-bottom: auto; }
+  #screen-success > .success-icon { width: 56px; height: 56px; min-width: 56px; min-height: 56px; margin-bottom: 10px; }
+  .success-icon svg { width: 30px; height: 30px; }
+  .success-title { font-size: 1.8rem; }
+
+  /* ---- Camera ---- */
+  .camera-top {
+    padding: calc(var(--safe-top) + 8px) max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));
+  }
+  .note-indicator { top: calc(var(--safe-top) + 58px); }
+
+  /* Banda cu poze: mai mică, jos, deasupra butoanelor — nu mai acoperă mijlocul */
+  .photo-strip {
+    bottom: calc(var(--safe-bot) + 66px);
+    padding: 4px max(12px, env(safe-area-inset-right, 0px)) 4px max(12px, env(safe-area-inset-left, 0px));
+    gap: 6px;
+  }
+  .strip-thumb { width: 48px; height: 48px; border-radius: 8px; }
+  .strip-thumb.strip-active { transform: scale(1.06); }
+  .strip-thumb.strip-uploaded { font-size: 1.05rem; }
+
+  .camera-bottom {
+    padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(var(--safe-bot) + 8px) max(16px, env(safe-area-inset-left, 0px));
+  }
+  .btn-retake,
+  .btn-finalize,
+  .btn-next-step { padding: 11px 8px; font-size: 0.9rem; }
+
+  /* „Apasă pentru a fotografia” și „Se procesează” — în spațiul liber dintre bara
+     de sus și banda cu poze */
+  .step-instruction,
+  .capture-processing {
+    padding: 52px 16px 124px;
+    gap: 8px;
+  }
+  .step-instruction-label { font-size: 1.45rem; }
+  .step-instruction-cta { padding: 10px 26px; margin-top: 2px; }
+  .step-finalize-btn { margin-top: 6px; padding: 6px 16px; }
+
+  /* Editor decupare — mai mult loc pentru poză */
+  .crop-top { padding: 6px max(14px, env(safe-area-inset-right, 0px)) 6px max(14px, env(safe-area-inset-left, 0px)); }
+  .crop-top-btn { padding: 6px 14px; }
+  .crop-actions { padding: 6px max(18px, env(safe-area-inset-right, 0px)) 8px max(18px, env(safe-area-inset-left, 0px)); }
+  .crop-actions .btn-retake,
+  .crop-actions .btn-next-step { padding: 9px 8px; }
+}

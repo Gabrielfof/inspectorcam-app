@@ -440,7 +440,18 @@ function hasExistingData() {
   } catch { return false; }
 }
 
-// O singură dată, la prima pornire după actualizare: noutățile versiunii curente
+// 1.5.10 > 1.5.9 (comparație pe numere, nu pe text)
+function compareVersions(a, b) {
+  const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d) return d;
+  }
+  return 0;
+}
+
+// O singură dată, la prima pornire după actualizare: noutățile tuturor versiunilor
+// sărite (de după versiunea avută până la cea curentă), fără punctele deja văzute
 ipcMain.handle('get-whats-new', () => {
   try {
     const current = app.getVersion();
@@ -449,8 +460,18 @@ ipcMain.handle('get-whats-new', () => {
     if (last === current) return null;
     writeVersionState({ ...state, lastVersion: current });
     if (!last && !hasExistingData()) return null;   // instalare nouă
-    const notes = require('./release-notes.json')[current];
-    return Array.isArray(notes) && notes.length ? { version: current, notes } : null;
+
+    const all = require('./release-notes.json');
+    const versions = Object.keys(all).sort(compareVersions);
+    // Fără versiune salvată = actualizare de pe ≤ 1.5.4 → toate noutățile până acum
+    const seen = new Set(last ? versions.filter(v => compareVersions(v, last) <= 0).flatMap(v => all[v] || []) : []);
+    const notes = [];
+    for (const v of versions.filter(v => (!last || compareVersions(v, last) > 0) && compareVersions(v, current) <= 0).reverse()) {
+      for (const n of all[v] || []) {
+        if (!seen.has(n)) { seen.add(n); notes.push(n); }
+      }
+    }
+    return notes.length ? { version: current, notes } : null;
   } catch {
     return null;
   }
