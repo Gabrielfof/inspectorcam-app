@@ -282,7 +282,11 @@ const App = (() => {
     document.getElementById('home-inspector-name').textContent = state.inspector.name;
     renderActivePlates();
     show('screen-home');
+    await refreshTodayList();
+  }
 
+  /* Lista „Azi”: inspecțiile de pe calculator + cele salvate doar în telefon („local”) */
+  async function refreshTodayList() {
     const today = new Date().toISOString().slice(0, 10);
 
     const [serverInspections, allPending] = await Promise.all([
@@ -1618,11 +1622,29 @@ const App = (() => {
   /* ============================================================
      Offline sync
      ============================================================ */
+  let syncing = false;   // o trimitere poate dura mai mult decât intervalul de 30 s
+
   async function syncPending() {
+    if (syncing) return;
+    syncing = true;
+    let synced = 0;
+    try {
+      await syncPendingOnce(n => { synced = n; });
+    } finally {
+      syncing = false;
+    }
+    // Eticheta „local” devine „ok” fără să mai iasă inspectorul din aplicație
+    if (synced > 0 && state.inspector && document.getElementById('screen-home').classList.contains('active')) {
+      refreshTodayList().catch(() => {});
+    }
+  }
+
+  async function syncPendingOnce(onSynced) {
     let pending;
     try { pending = await Storage.getPending(); } catch { return; }
     if (pending.length === 0) return;
 
+    let synced = 0;
     for (const inspection of pending) {
       try {
         let result;
@@ -1654,6 +1676,8 @@ const App = (() => {
           }
         }
         toast(`${inspection.plate} — sincronizat cu serverul.`, 'success');
+        Diag.log('sync_ok', { photos: (inspection.photos || []).length });
+        onSynced(++synced);
       } catch {
         // Still unreachable; will retry next cycle
       }

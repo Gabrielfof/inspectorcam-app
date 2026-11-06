@@ -68,6 +68,13 @@ const Sync = (() => {
     }
   }
 
+  // Timp maxim pentru o trimitere: 30 s + 15 s pentru fiecare MB de poze, maxim 2 minute.
+  // Pe Wi-Fi slab, un caz cu multe poze nu mai ajunge pe „local” doar pentru că durează.
+  function uploadTimeout(photos) {
+    const mb = photos.reduce((sum, p) => sum + (p.blob instanceof Blob ? p.blob.size : 0), 0) / 1048576;
+    return Math.min(120_000, 30_000 + Math.ceil(mb) * 15_000);
+  }
+
   // Construiește FormData cu meta și fișiere aliniate pe același index
   function buildPhotoFormData(fd, photos) {
     const valid = photos.filter(p => p.blob instanceof Blob && p.blob.size > 0);
@@ -93,7 +100,7 @@ const Sync = (() => {
     buildPhotoFormData(fd, inspection.photos);
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30_000);
+    const timer = setTimeout(() => controller.abort(), uploadTimeout(inspection.photos));
     try {
       return await api('/api/inspections', { method: 'POST', body: fd, signal: controller.signal });
     } finally {
@@ -109,7 +116,7 @@ const Sync = (() => {
     buildPhotoFormData(fd, inspection.photos);
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30_000);
+    const timer = setTimeout(() => controller.abort(), uploadTimeout(inspection.photos));
     try {
       return await api(`/api/inspections/${encodeURIComponent(inspectionId)}/photos`, {
         method: 'POST', body: fd, signal: controller.signal,

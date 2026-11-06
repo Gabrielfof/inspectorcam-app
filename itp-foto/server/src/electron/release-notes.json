@@ -17,5 +17,8 @@
   ],
   "1.5.9": [
     "Îmbunătățiri și corecturi minore."
+  ],
+  "1.5.10": [
+    "Cazurile salvate temporar pe telefon („local”) apar ca trimise imediat ce ajung pe calculator."
   ]
 }
